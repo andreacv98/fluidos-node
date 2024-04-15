@@ -33,6 +33,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
+	reservation "github.com/fluidos-project/node/apis/reservation/v1alpha1"
 	"github.com/fluidos-project/node/pkg/utils/flags"
 	"github.com/fluidos-project/node/pkg/utils/getters"
 	"github.com/fluidos-project/node/pkg/utils/resourceforge"
@@ -173,9 +174,24 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 		// and eventually create a new one detaching the right Partition from the old one
 		klog.Infof("Allocation %s is inactive", req.NamespacedName)
 
-		flavour, err := services.GetFlavourByID(allocation.Spec.Flavour.Name, r.Client)
+		// Get the contract related to the Allocation
+		contract := &reservation.Contract{}
+		if err := r.Client.Get(ctx, types.NamespacedName{
+			Name:      allocation.Spec.Contract.Name,
+			Namespace: allocation.Spec.Contract.Namespace,
+		}, contract); err != nil {
+			klog.Errorf("Error when getting Contract %s: %v", allocation.Spec.Contract.Name, err)
+			allocation.SetStatus(nodecorev1alpha1.Error, "Error when getting Contract")
+			if err := r.updateAllocationStatus(ctx, allocation); err != nil {
+				klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
+				return ctrl.Result{}, err
+			}
+			return ctrl.Result{}, nil
+		}
+
+		flavour, err := services.GetFlavourByID(contract.Spec.Flavour.Name, r.Client)
 		if err != nil {
-			klog.Errorf("Error when getting Flavour %s: %v", allocation.Spec.Flavour.Name, err)
+			klog.Errorf("Error when getting Flavour %s: %v", contract.Spec.Flavour.Name, err)
 			allocation.SetStatus(nodecorev1alpha1.Error, "Error when getting Flavour")
 			if err := r.updateAllocationStatus(ctx, allocation); err != nil {
 				klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
@@ -197,12 +213,12 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 			return ctrl.Result{}, nil
 		}
 
-		if allocation.Spec.Partitioned {
+		if contract.Spec.Partition != nil {
 			// We need to create a new Flavour with the right Partition
-			flavourRes := allocation.Spec.Flavour.Spec.Characteristics
-			allocationRes := allocation.Spec.Resources
+			flavourRes := contract.Spec.Flavour.Spec.Characteristics
+			allocationRes := computeResources(contract)
 
-			newCharacteristics := computeCharacteristics(&flavourRes, &allocationRes)
+			newCharacteristics := computeCharacteristics(&flavourRes, allocationRes)
 			newFlavour := resourceforge.ForgeFlavourFromRef(flavour, newCharacteristics)
 
 			if err := r.Client.Create(ctx, newFlavour); err != nil {
@@ -287,6 +303,21 @@ func (r *AllocationReconciler) handleVirtualNodeAllocation(ctx context.Context,
 		klog.Infof("Allocation %s is in an unknown state", req.NamespacedName)
 		return ctrl.Result{}, nil
 	}
+}
+
+func computeResources(contract *reservation.Contract) *nodecorev1alpha1.Characteristics {
+	if contract.Spec.Partition != nil {
+		return &nodecorev1alpha1.Characteristics{
+			Architecture:      contract.Spec.Partition.Architecture,
+			Cpu:               contract.Spec.Partition.CPU,
+			Memory:            contract.Spec.Partition.Memory,
+			Pods:              contract.Spec.Partition.Pods,
+			EphemeralStorage:  contract.Spec.Partition.EphemeralStorage,
+			Gpu:               contract.Spec.Partition.Gpu,
+			PersistentStorage: contract.Spec.Partition.Storage,
+		}
+	}
+	return contract.Spec.Flavour.Spec.Characteristics.DeepCopy()
 }
 
 func computeCharacteristics(origin, part *nodecorev1alpha1.Characteristics) *nodecorev1alpha1.Characteristics {
