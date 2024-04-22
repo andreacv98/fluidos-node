@@ -19,6 +19,6 @@ spec:
   # This flag is used to indicate that the solver should find a candidate (FLUIDOS node)
   findCandidate: true
   # This flag is used to indicate that the solver should reserve and buy the resources from the candidate (FLUIDOS node)
-  reserveAndBuy: true
+  reserveAndBuy: false
   # This flag is used to indicate that the solver should establish peering with the candidate (FLUIDOS node)
-  enstablishPeering: true
+  enstablishPeering: false
