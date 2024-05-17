@@ -43,9 +43,9 @@ func (g *Gateway) GetTransaction(transactionID string) (models.Transaction, erro
 }
 
 // SearchTransaction returns a transaction from the transactions map.
-func (g *Gateway) SearchTransaction(buyerID, flavourID string) (*models.Transaction, bool) {
+func (g *Gateway) SearchTransaction(buyerID, flavorID string) (*models.Transaction, bool) {
 	for _, t := range g.Transactions {
-		if t.Buyer.NodeID == buyerID && t.FlavourID == flavourID {
+		if t.Buyer.NodeID == buyerID && t.FlavorID == flavorID {
 			return &t, true
 		}
 	}

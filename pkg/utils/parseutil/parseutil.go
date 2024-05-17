@@ -22,11 +22,11 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/models"
 )
 
-// ParseFlavourSelector parses FlavourSelector into a Selector.
-func ParseFlavourSelector(selector *nodecorev1alpha1.FlavourSelector) *models.Selector {
+// ParseFlavorSelector parses FlavorSelector into a Selector.
+func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Selector {
 	s := &models.Selector{
 		Architecture: selector.Architecture,
-		FlavourType:  selector.FlavourType,
+		FlavorType:   selector.FlavorType,
 	}
 
 	if selector.MatchSelector != nil {
@@ -94,54 +94,54 @@ func ParseNodeIdentity(node nodecorev1alpha1.NodeIdentity) models.NodeIdentity {
 	}
 }
 
-// ParseFlavour creates a Flavour Object from a Flavour CR.
-func ParseFlavour(flavour *nodecorev1alpha1.Flavour) *models.Flavour {
-	return &models.Flavour{
-		FlavourID:  flavour.Name,
-		Type:       string(flavour.Spec.Type),
-		ProviderID: flavour.Spec.ProviderID,
+// ParseFlavor creates a Flavor Object from a Flavor CR.
+func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
+	return &models.Flavor{
+		FlavorID:   flavor.Name,
+		Type:       string(flavor.Spec.Type),
+		ProviderID: flavor.Spec.ProviderID,
 		Characteristics: models.Characteristics{
-			Architecture:      flavour.Spec.Characteristics.Architecture,
-			CPU:               flavour.Spec.Characteristics.Cpu,
-			Memory:            flavour.Spec.Characteristics.Memory,
-			Pods:              flavour.Spec.Characteristics.Pods,
-			PersistentStorage: flavour.Spec.Characteristics.PersistentStorage,
-			EphemeralStorage:  flavour.Spec.Characteristics.EphemeralStorage,
-			Gpu:               flavour.Spec.Characteristics.Gpu,
+			Architecture:      flavor.Spec.Characteristics.Architecture,
+			CPU:               flavor.Spec.Characteristics.Cpu,
+			Memory:            flavor.Spec.Characteristics.Memory,
+			Pods:              flavor.Spec.Characteristics.Pods,
+			PersistentStorage: flavor.Spec.Characteristics.PersistentStorage,
+			EphemeralStorage:  flavor.Spec.Characteristics.EphemeralStorage,
+			Gpu:               flavor.Spec.Characteristics.Gpu,
 		},
-		Owner: ParseNodeIdentity(flavour.Spec.Owner),
+		Owner: ParseNodeIdentity(flavor.Spec.Owner),
 		Policy: models.Policy{
 			Partitionable: func() *models.Partitionable {
-				if flavour.Spec.Policy.Partitionable != nil {
+				if flavor.Spec.Policy.Partitionable != nil {
 					return &models.Partitionable{
-						CPUMinimum:    flavour.Spec.Policy.Partitionable.CpuMin,
-						MemoryMinimum: flavour.Spec.Policy.Partitionable.MemoryMin,
-						PodsMinimum:   flavour.Spec.Policy.Partitionable.PodsMin,
-						CPUStep:       flavour.Spec.Policy.Partitionable.CpuStep,
-						MemoryStep:    flavour.Spec.Policy.Partitionable.MemoryStep,
-						PodsStep:      flavour.Spec.Policy.Partitionable.PodsStep,
+						CPUMinimum:    flavor.Spec.Policy.Partitionable.CpuMin,
+						MemoryMinimum: flavor.Spec.Policy.Partitionable.MemoryMin,
+						PodsMinimum:   flavor.Spec.Policy.Partitionable.PodsMin,
+						CPUStep:       flavor.Spec.Policy.Partitionable.CpuStep,
+						MemoryStep:    flavor.Spec.Policy.Partitionable.MemoryStep,
+						PodsStep:      flavor.Spec.Policy.Partitionable.PodsStep,
 					}
 				}
 				return nil
 			}(),
 			Aggregatable: func() *models.Aggregatable {
-				if flavour.Spec.Policy.Aggregatable != nil {
+				if flavor.Spec.Policy.Aggregatable != nil {
 					return &models.Aggregatable{
-						MinCount: flavour.Spec.Policy.Aggregatable.MinCount,
-						MaxCount: flavour.Spec.Policy.Aggregatable.MaxCount,
+						MinCount: flavor.Spec.Policy.Aggregatable.MinCount,
+						MaxCount: flavor.Spec.Policy.Aggregatable.MaxCount,
 					}
 				}
 				return nil
 			}(),
 		},
 		Price: models.Price{
-			Amount:   flavour.Spec.Price.Amount,
-			Currency: flavour.Spec.Price.Currency,
-			Period:   flavour.Spec.Price.Period,
+			Amount:   flavor.Spec.Price.Amount,
+			Currency: flavor.Spec.Price.Currency,
+			Period:   flavor.Spec.Price.Period,
 		},
 		OptionalFields: models.OptionalFields{
-			Availability: flavour.Spec.OptionalFields.Availability,
-			WorkerID:     flavour.Spec.OptionalFields.WorkerID,
+			Availability: flavor.Spec.OptionalFields.Availability,
+			WorkerID:     flavor.Spec.OptionalFields.WorkerID,
 		},
 	}
 }
@@ -150,7 +150,7 @@ func ParseFlavour(flavour *nodecorev1alpha1.Flavour) *models.Flavour {
 func ParseContract(contract *reservationv1alpha1.Contract) *models.Contract {
 	return &models.Contract{
 		ContractID:     contract.Name,
-		Flavour:        *ParseFlavour(&contract.Spec.Flavour),
+		Flavor:         *ParseFlavor(&contract.Spec.Flavor),
 		Buyer:          ParseNodeIdentity(contract.Spec.Buyer),
 		BuyerClusterID: contract.Spec.BuyerClusterID,
 		TransactionID:  contract.Spec.TransactionID,

@@ -12,12 +12,12 @@ A Helm chart for Fluidos Node
 | common.extraArgs | list | `[]` | Extra arguments for all fluidos-node pods |
 | common.nodeSelector | object | `{}` | NodeSelector for all fluidos-node pods |
 | common.tolerations | list | `[]` | Tolerations for all fluidos-node pods |
-| localResourceManager.config.flavour.cpuMin | string | `"0"` | The minimum number of CPUs that can be requested to purchase a flavour. |
-| localResourceManager.config.flavour.cpuStep | string | `"1000m"` | The CPU step that must be respected when requesting a flavour through a Flavour Selector. |
-| localResourceManager.config.flavour.memoryMin | string | `"0"` | The minimum amount of memory that can be requested to purchase a flavour. |
-| localResourceManager.config.flavour.memoryStep | string | `"100Mi"` | The memory step that must be respected when requesting a flavour through a Flavour Selector. |
+| localResourceManager.config.flavor.cpuMin | string | `"0"` | The minimum number of CPUs that can be requested to purchase a flavor. |
+| localResourceManager.config.flavor.cpuStep | string | `"1000m"` | The CPU step that must be respected when requesting a flavor through a Flavor Selector. |
+| localResourceManager.config.flavor.memoryMin | string | `"0"` | The minimum amount of memory that can be requested to purchase a flavor. |
+| localResourceManager.config.flavor.memoryStep | string | `"100Mi"` | The memory step that must be respected when requesting a flavor through a Flavor Selector. |
 | localResourceManager.config.nodeResourceLabel | string | `"node-role.fluidos.eu/resources"` | Label used to identify the nodes from which resources are collected. |
-| localResourceManager.config.resourceType | string | `"k8s-fluidos"` | This flag defines the resource type of the generated flavours. |
+| localResourceManager.config.resourceType | string | `"k8s-fluidos"` | This flag defines the resource type of the generated flavors. |
 | localResourceManager.imageName | string | `"ghcr.io/fluidos-project/local-resource-manager"` |  |
 | localResourceManager.pod.annotations | object | `{}` | Annotations for the local-resource-manager pod. |
 | localResourceManager.pod.extraArgs | list | `[]` | Extra arguments for the local-resource-manager pod. |

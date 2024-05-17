@@ -171,7 +171,7 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 		// We need to check if the ForeignCluster is again ready
 		return ctrl.Result{}, nil
 	case nodecorev1alpha1.Inactive:
-		// Alloction Type is Node, so we need to invalidate the Flavour
+		// Alloction Type is Node, so we need to invalidate the Flavor
 		// and eventually create a new one detaching the right Partition from the old one
 		klog.Infof("Allocation %s is inactive", req.NamespacedName)
 
@@ -190,23 +190,23 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 			return ctrl.Result{}, nil
 		}
 
-		flavour, err := services.GetFlavourByID(contract.Spec.Flavour.Name, r.Client)
+		flavor, err := services.GetFlavorByID(contract.Spec.Flavor.Name, r.Client)
 		if err != nil {
-			klog.Errorf("Error when getting Flavour %s: %v", contract.Spec.Flavour.Name, err)
-			allocation.SetStatus(nodecorev1alpha1.Error, "Error when getting Flavour")
+			klog.Errorf("Error when getting Flavor %s: %v", contract.Spec.Flavor.Name, err)
+			allocation.SetStatus(nodecorev1alpha1.Error, "Error when getting Flavor")
 			if err := r.updateAllocationStatus(ctx, allocation); err != nil {
 				klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
 				return ctrl.Result{}, err
 			}
 			return ctrl.Result{}, nil
 		}
-		flavourCopy := flavour.DeepCopy()
-		flavourCopy.Spec.OptionalFields.Availability = false
-		klog.Infof("Updating Flavour %s: Availability %t", flavourCopy.Name, flavourCopy.Spec.OptionalFields.Availability)
+		flavorCopy := flavor.DeepCopy()
+		flavorCopy.Spec.OptionalFields.Availability = false
+		klog.Infof("Updating Flavor %s: Availability %t", flavorCopy.Name, flavorCopy.Spec.OptionalFields.Availability)
 		// TODO: Known issue, availability will be not updated
-		if err := r.Client.Update(ctx, flavourCopy); err != nil {
-			klog.Errorf("Error when updating Flavour %s: %v", flavourCopy.Name, err)
-			allocation.SetStatus(nodecorev1alpha1.Error, "Error when updating Flavour")
+		if err := r.Client.Update(ctx, flavorCopy); err != nil {
+			klog.Errorf("Error when updating Flavor %s: %v", flavorCopy.Name, err)
+			allocation.SetStatus(nodecorev1alpha1.Error, "Error when updating Flavor")
 			if err := r.updateAllocationStatus(ctx, allocation); err != nil {
 				klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
 				return ctrl.Result{}, err
@@ -215,16 +215,16 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 		}
 
 		if contract.Spec.Partition != nil {
-			// We need to create a new Flavour with the right Partition
-			flavourRes := contract.Spec.Flavour.Spec.Characteristics
+			// We need to create a new Flavor with the right Partition
+			flavorRes := contract.Spec.Flavor.Spec.Characteristics
 			allocationRes := computeResources(contract)
 
-			newCharacteristics := computeCharacteristics(&flavourRes, allocationRes)
-			newFlavour := resourceforge.ForgeFlavourFromRef(flavour, newCharacteristics)
+			newCharacteristics := computeCharacteristics(&flavorRes, allocationRes)
+			newFlavor := resourceforge.ForgeFlavorFromRef(flavor, newCharacteristics)
 
-			if err := r.Client.Create(ctx, newFlavour); err != nil {
-				klog.Errorf("Error when creating Flavour %s: %v", newFlavour.Name, err)
-				allocation.SetStatus(nodecorev1alpha1.Error, "Error when creating Flavour")
+			if err := r.Client.Create(ctx, newFlavor); err != nil {
+				klog.Errorf("Error when creating Flavor %s: %v", newFlavor.Name, err)
+				allocation.SetStatus(nodecorev1alpha1.Error, "Error when creating Flavor")
 				if err := r.updateAllocationStatus(ctx, allocation); err != nil {
 					klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
 					return ctrl.Result{}, err
@@ -360,7 +360,7 @@ func computeResources(contract *reservation.Contract) *nodecorev1alpha1.Characte
 			PersistentStorage: contract.Spec.Partition.Storage,
 		}
 	}
-	return contract.Spec.Flavour.Spec.Characteristics.DeepCopy()
+	return contract.Spec.Flavor.Spec.Characteristics.DeepCopy()
 }
 
 func computeCharacteristics(origin, part *nodecorev1alpha1.Characteristics) *nodecorev1alpha1.Characteristics {

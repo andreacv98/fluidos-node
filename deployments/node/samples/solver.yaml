@@ -4,7 +4,7 @@ metadata:
   name: solver-sample
   namespace: fluidos
 spec:
-  # This is the Selector used to find a Flavour (FLUIDOS node) that matches the requirements
+  # This is the Selector used to find a Flavor (FLUIDOS node) that matches the requirements
   selector:
     # ONLY k8s-fluidos is supported at the moment
     type: k8s-fluidos

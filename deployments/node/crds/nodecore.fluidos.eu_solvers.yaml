@@ -93,13 +93,13 @@ spec:
                   should reserve and buy the resources on the candidate.
                 type: boolean
               selector:
-                description: Selector contains the flavour requirements for the solver.
+                description: Selector contains the flavor requirements for the solver.
                 properties:
                   architecture:
                     type: string
                   matchSelector:
                     description: MatchSelector represents the criteria for selecting
-                      Flavours through a strict match.
+                      Flavors through a strict match.
                     properties:
                       cpu:
                         anyOf:
@@ -140,7 +140,7 @@ spec:
                     type: object
                   rangeSelector:
                     description: RangeSelector represents the criteria for selecting
-                      Flavours through a range.
+                      Flavors through a range.
                     properties:
                       MaxCpu:
                         anyOf:
@@ -281,12 +281,12 @@ spec:
               discoveryPhase:
                 description: |-
                   DiscoveryPhase describes the status of the Discovery where the Discovery Manager
-                  is looking for matching flavours outside the FLUIDOS Node
+                  is looking for matching flavors outside the FLUIDOS Node
                 type: string
               findCandidate:
                 description: |-
                   FindCandidate describes the status of research of the candidate.
-                  Rear Manager is looking for the best candidate Flavour to solve the Node Orchestrator request.
+                  Rear Manager is looking for the best candidate Flavor to solve the Node Orchestrator request.
                 type: string
               peering:
                 description: |-
@@ -300,7 +300,7 @@ spec:
                 type: string
               reserveAndBuy:
                 description: |-
-                  ReserveAndBuy describes the status of the reservation and purchase of selected Flavour.
+                  ReserveAndBuy describes the status of the reservation and purchase of selected Flavor.
                   Rear Manager is trying to reserve and purchase the resources on the candidate FLUIDOS Node.
                 type: string
               solverPhase:

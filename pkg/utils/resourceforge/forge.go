@@ -29,15 +29,15 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/tools"
 )
 
-// ForgeDiscovery creates a Discovery CR from a FlavourSelector and a solverID.
-func ForgeDiscovery(selector *nodecorev1alpha1.FlavourSelector, solverID string) *advertisementv1alpha1.Discovery {
+// ForgeDiscovery creates a Discovery CR from a FlavorSelector and a solverID.
+func ForgeDiscovery(selector *nodecorev1alpha1.FlavorSelector, solverID string) *advertisementv1alpha1.Discovery {
 	return &advertisementv1alpha1.Discovery{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      namings.ForgeDiscoveryName(solverID),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: advertisementv1alpha1.DiscoverySpec{
-			Selector: func() *nodecorev1alpha1.FlavourSelector {
+			Selector: func() *nodecorev1alpha1.FlavorSelector {
 				if selector != nil {
 					return selector
 				}
@@ -49,21 +49,21 @@ func ForgeDiscovery(selector *nodecorev1alpha1.FlavourSelector, solverID string)
 	}
 }
 
-// ForgePeeringCandidate creates a PeeringCandidate CR from a Flavour and a Discovery.
-func ForgePeeringCandidate(flavourPeeringCandidate *nodecorev1alpha1.Flavour,
+// ForgePeeringCandidate creates a PeeringCandidate CR from a Flavor and a Discovery.
+func ForgePeeringCandidate(flavorPeeringCandidate *nodecorev1alpha1.Flavor,
 	solverID string, available bool) (pc *advertisementv1alpha1.PeeringCandidate) {
 	pc = &advertisementv1alpha1.PeeringCandidate{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgePeeringCandidateName(flavourPeeringCandidate.Name),
+			Name:      namings.ForgePeeringCandidateName(flavorPeeringCandidate.Name),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: advertisementv1alpha1.PeeringCandidateSpec{
-			Flavour: nodecorev1alpha1.Flavour{
+			Flavor: nodecorev1alpha1.Flavor{
 				ObjectMeta: metav1.ObjectMeta{
-					Name:      flavourPeeringCandidate.Name,
-					Namespace: flavourPeeringCandidate.Namespace,
+					Name:      flavorPeeringCandidate.Name,
+					Namespace: flavorPeeringCandidate.Namespace,
 				},
-				Spec: flavourPeeringCandidate.Spec,
+				Spec: flavorPeeringCandidate.Spec,
 			},
 			Available: available,
 		},
@@ -86,9 +86,9 @@ func ForgeReservation(pc *advertisementv1alpha1.PeeringCandidate,
 			SolverID: solverID,
 			Buyer:    ni,
 			Seller: nodecorev1alpha1.NodeIdentity{
-				Domain: pc.Spec.Flavour.Spec.Owner.Domain,
-				NodeID: pc.Spec.Flavour.Spec.Owner.NodeID,
-				IP:     pc.Spec.Flavour.Spec.Owner.IP,
+				Domain: pc.Spec.Flavor.Spec.Owner.Domain,
+				NodeID: pc.Spec.Flavor.Spec.Owner.NodeID,
+				IP:     pc.Spec.Flavor.Spec.Owner.IP,
 			},
 			PeeringCandidate: nodecorev1alpha1.GenericRef{
 				Name:      pc.Name,
@@ -111,22 +111,22 @@ func ForgeReservation(pc *advertisementv1alpha1.PeeringCandidate,
 }
 
 // ForgeContract creates a Contract CR.
-func ForgeContract(flavour *nodecorev1alpha1.Flavour, transaction *models.Transaction,
+func ForgeContract(flavor *nodecorev1alpha1.Flavor, transaction *models.Transaction,
 	lc *nodecorev1alpha1.LiqoCredentials) *reservationv1alpha1.Contract {
 	return &reservationv1alpha1.Contract{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeContractName(flavour.Name),
+			Name:      namings.ForgeContractName(flavor.Name),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: reservationv1alpha1.ContractSpec{
-			Flavour: *flavour,
+			Flavor: *flavor,
 			Buyer: nodecorev1alpha1.NodeIdentity{
 				Domain: transaction.Buyer.Domain,
 				IP:     transaction.Buyer.IP,
 				NodeID: transaction.Buyer.NodeID,
 			},
 			BuyerClusterID:    transaction.ClusterID,
-			Seller:            flavour.Spec.Owner,
+			Seller:            flavor.Spec.Owner,
 			SellerCredentials: *lc,
 			TransactionID:     transaction.TransactionID,
 			Partition: func() *nodecorev1alpha1.Partition {
@@ -147,14 +147,14 @@ func ForgeContract(flavour *nodecorev1alpha1.Flavour, transaction *models.Transa
 	}
 }
 
-// ForgeFlavourFromMetrics creates a new flavour custom resource from the metrics of the node.
-func ForgeFlavourFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity) (flavour *nodecorev1alpha1.Flavour) {
-	return &nodecorev1alpha1.Flavour{
+// ForgeFlavorFromMetrics creates a new flavor custom resource from the metrics of the node.
+func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity) (flavor *nodecorev1alpha1.Flavor) {
+	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavourName(node.UID, "", ni.Domain),
+			Name:      namings.ForgeFlavorName(node.UID, "", ni.Domain),
 			Namespace: flags.FluidoNamespace,
 		},
-		Spec: nodecorev1alpha1.FlavourSpec{
+		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID: ni.NodeID,
 			Type:       nodecorev1alpha1.K8S,
 			Characteristics: nodecorev1alpha1.Characteristics{
@@ -195,14 +195,14 @@ func ForgeFlavourFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIden
 	}
 }
 
-// ForgeFlavourFromRef creates a new flavour starting from a Reference Flavour and the new Characteristics.
-func ForgeFlavourFromRef(f *nodecorev1alpha1.Flavour, char *nodecorev1alpha1.Characteristics) (flavour *nodecorev1alpha1.Flavour) {
-	return &nodecorev1alpha1.Flavour{
+// ForgeFlavorFromRef creates a new flavor starting from a Reference Flavor and the new Characteristics.
+func ForgeFlavorFromRef(f *nodecorev1alpha1.Flavor, char *nodecorev1alpha1.Characteristics) (flavor *nodecorev1alpha1.Flavor) {
+	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavourName(f.Spec.OptionalFields.WorkerID, string(f.Spec.Type), f.Spec.Owner.Domain),
+			Name:      namings.ForgeFlavorName(f.Spec.OptionalFields.WorkerID, string(f.Spec.Type), f.Spec.Owner.Domain),
 			Namespace: flags.FluidoNamespace,
 		},
-		Spec: nodecorev1alpha1.FlavourSpec{
+		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID:      f.Spec.ProviderID,
 			Type:            f.Spec.Type,
 			Characteristics: *char,
@@ -225,7 +225,7 @@ func ForgeTransactionObj(id string, req *models.ReserveRequest) *models.Transact
 		TransactionID: id,
 		Buyer:         req.Buyer,
 		ClusterID:     req.ClusterID,
-		FlavourID:     req.FlavourID,
+		FlavorID:      req.FlavorID,
 		Partition: func() *models.Partition {
 			if req.Partition != nil {
 				return req.Partition
@@ -240,7 +240,7 @@ func ForgeTransactionObj(id string, req *models.ReserveRequest) *models.Transact
 func ForgeContractObj(contract *reservationv1alpha1.Contract) models.Contract {
 	return models.Contract{
 		ContractID:     contract.Name,
-		Flavour:        *parseutil.ParseFlavour(&contract.Spec.Flavour),
+		Flavor:         *parseutil.ParseFlavor(&contract.Spec.Flavor),
 		Buyer:          parseutil.ParseNodeIdentity(contract.Spec.Buyer),
 		BuyerClusterID: contract.Spec.BuyerClusterID,
 		Seller:         parseutil.ParseNodeIdentity(contract.Spec.Seller),
@@ -283,7 +283,7 @@ func ForgeContractFromObj(contract *models.Contract) *reservationv1alpha1.Contra
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: reservationv1alpha1.ContractSpec{
-			Flavour: *ForgeFlavourFromObj(&contract.Flavour),
+			Flavor: *ForgeFlavorFromObj(&contract.Flavor),
 			Buyer: nodecorev1alpha1.NodeIdentity{
 				Domain: contract.Buyer.Domain,
 				IP:     contract.Buyer.IP,
@@ -333,7 +333,7 @@ func ForgeTransactionFromObj(transaction *models.Transaction) *reservationv1alph
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: reservationv1alpha1.TransactionSpec{
-			FlavourID: transaction.FlavourID,
+			FlavorID:  transaction.FlavorID,
 			StartTime: transaction.StartTime,
 			Buyer: nodecorev1alpha1.NodeIdentity{
 				Domain: transaction.Buyer.Domain,
@@ -351,69 +351,69 @@ func ForgeTransactionFromObj(transaction *models.Transaction) *reservationv1alph
 	}
 }
 
-// ForgeFlavourFromObj creates a Flavour CR from a Flavour Object (REAR).
-func ForgeFlavourFromObj(flavour *models.Flavour) *nodecorev1alpha1.Flavour {
-	f := &nodecorev1alpha1.Flavour{
+// ForgeFlavorFromObj creates a Flavor CR from a Flavor Object (REAR).
+func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
+	f := &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      flavour.FlavourID,
+			Name:      flavor.FlavorID,
 			Namespace: flags.FluidoNamespace,
 		},
-		Spec: nodecorev1alpha1.FlavourSpec{
-			ProviderID: flavour.Owner.NodeID,
+		Spec: nodecorev1alpha1.FlavorSpec{
+			ProviderID: flavor.Owner.NodeID,
 			Type:       nodecorev1alpha1.K8S,
 			Characteristics: nodecorev1alpha1.Characteristics{
-				Cpu:               flavour.Characteristics.CPU,
-				Memory:            flavour.Characteristics.Memory,
-				Pods:              flavour.Characteristics.Pods,
-				Architecture:      flavour.Characteristics.Architecture,
-				EphemeralStorage:  flavour.Characteristics.EphemeralStorage,
-				PersistentStorage: flavour.Characteristics.PersistentStorage,
-				Gpu:               flavour.Characteristics.Gpu,
+				Cpu:               flavor.Characteristics.CPU,
+				Memory:            flavor.Characteristics.Memory,
+				Pods:              flavor.Characteristics.Pods,
+				Architecture:      flavor.Characteristics.Architecture,
+				EphemeralStorage:  flavor.Characteristics.EphemeralStorage,
+				PersistentStorage: flavor.Characteristics.PersistentStorage,
+				Gpu:               flavor.Characteristics.Gpu,
 			},
 			Policy: nodecorev1alpha1.Policy{
-				// Check if flavour.Partitionable is not nil before setting Partitionable
+				// Check if flavor.Partitionable is not nil before setting Partitionable
 				Partitionable: func() *nodecorev1alpha1.Partitionable {
-					if flavour.Policy.Partitionable != nil {
+					if flavor.Policy.Partitionable != nil {
 						return &nodecorev1alpha1.Partitionable{
-							CpuMin:     flavour.Policy.Partitionable.CPUMinimum,
-							MemoryMin:  flavour.Policy.Partitionable.MemoryMinimum,
-							CpuStep:    flavour.Policy.Partitionable.CPUStep,
-							MemoryStep: flavour.Policy.Partitionable.MemoryStep,
+							CpuMin:     flavor.Policy.Partitionable.CPUMinimum,
+							MemoryMin:  flavor.Policy.Partitionable.MemoryMinimum,
+							CpuStep:    flavor.Policy.Partitionable.CPUStep,
+							MemoryStep: flavor.Policy.Partitionable.MemoryStep,
 						}
 					}
 					return nil
 				}(),
 				Aggregatable: func() *nodecorev1alpha1.Aggregatable {
-					if flavour.Policy.Aggregatable != nil {
+					if flavor.Policy.Aggregatable != nil {
 						return &nodecorev1alpha1.Aggregatable{
-							MinCount: flavour.Policy.Aggregatable.MinCount,
-							MaxCount: flavour.Policy.Aggregatable.MaxCount,
+							MinCount: flavor.Policy.Aggregatable.MinCount,
+							MaxCount: flavor.Policy.Aggregatable.MaxCount,
 						}
 					}
 					return nil
 				}(),
 			},
 			Owner: nodecorev1alpha1.NodeIdentity{
-				Domain: flavour.Owner.Domain,
-				IP:     flavour.Owner.IP,
-				NodeID: flavour.Owner.NodeID,
+				Domain: flavor.Owner.Domain,
+				IP:     flavor.Owner.IP,
+				NodeID: flavor.Owner.NodeID,
 			},
 			Price: nodecorev1alpha1.Price{
-				Amount:   flavour.Price.Amount,
-				Currency: flavour.Price.Currency,
-				Period:   flavour.Price.Period,
+				Amount:   flavor.Price.Amount,
+				Currency: flavor.Price.Currency,
+				Period:   flavor.Price.Period,
 			},
 			OptionalFields: nodecorev1alpha1.OptionalFields{
-				Availability: flavour.OptionalFields.Availability,
-				WorkerID:     flavour.OptionalFields.WorkerID,
+				Availability: flavor.OptionalFields.Availability,
+				WorkerID:     flavor.OptionalFields.WorkerID,
 			},
 		},
 	}
 	return f
 }
 
-// ForgePartition creates a Partition from a FlavourSelector.
-func ForgePartition(selector *nodecorev1alpha1.FlavourSelector) *nodecorev1alpha1.Partition {
+// ForgePartition creates a Partition from a FlavorSelector.
+func ForgePartition(selector *nodecorev1alpha1.FlavorSelector) *nodecorev1alpha1.Partition {
 	return &nodecorev1alpha1.Partition{
 		Architecture:     selector.Architecture,
 		CPU:              selector.RangeSelector.MinCpu,
@@ -430,7 +430,7 @@ func ForgeAllocation(contract *reservationv1alpha1.Contract, intentID, nodeName 
 	destination nodecorev1alpha1.Destination, nodeType nodecorev1alpha1.NodeType) *nodecorev1alpha1.Allocation {
 	return &nodecorev1alpha1.Allocation{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeAllocationName(contract.Spec.Flavour.Name),
+			Name:      namings.ForgeAllocationName(contract.Spec.Flavor.Name),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: nodecorev1alpha1.AllocationSpec{

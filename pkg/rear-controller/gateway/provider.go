@@ -38,65 +38,65 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/tools"
 )
 
-// getFlavours gets all the flavours CRs from the cluster.
-func (g *Gateway) getFlavours(w http.ResponseWriter, _ *http.Request) {
+// getFlavors gets all the flavors CRs from the cluster.
+func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	klog.Infof("Processing request for getting all Flavours...")
+	klog.Infof("Processing request for getting all Flavors...")
 
-	flavours, err := services.GetAllFlavours(g.client)
+	flavors, err := services.GetAllFlavors(g.client)
 	if err != nil {
-		klog.Errorf("Error getting all the Flavour CRs: %s", err)
-		http.Error(w, "Error getting all the Flavour CRs", http.StatusInternalServerError)
+		klog.Errorf("Error getting all the Flavor CRs: %s", err)
+		http.Error(w, "Error getting all the Flavor CRs", http.StatusInternalServerError)
 		return
 	}
 
-	klog.Infof("Found %d Flavours in the cluster", len(flavours))
+	klog.Infof("Found %d Flavors in the cluster", len(flavors))
 
-	availableFlavours := make([]nodecorev1alpha1.Flavour, 0)
+	availableFlavors := make([]nodecorev1alpha1.Flavor, 0)
 
-	// Filtering only the available flavours
-	for i := range flavours {
-		if !flavours[i].Spec.OptionalFields.Availability {
-			availableFlavours = append(availableFlavours, flavours[i])
+	// Filtering only the available flavors
+	for i := range flavors {
+		if !flavors[i].Spec.OptionalFields.Availability {
+			availableFlavors = append(availableFlavors, flavors[i])
 		}
 	}
 
-	klog.Infof("Available Flavours: %d", len(availableFlavours))
-	if len(availableFlavours) == 0 {
-		klog.Infof("No available Flavours found")
+	klog.Infof("Available Flavors: %d", len(availableFlavors))
+	if len(availableFlavors) == 0 {
+		klog.Infof("No available Flavors found")
 		// Return content for empty list
-		emptyList := make([]*nodecorev1alpha1.Flavour, 0)
+		emptyList := make([]*nodecorev1alpha1.Flavor, 0)
 		encodeResponseStatusCode(w, emptyList, http.StatusNoContent)
 		return
 	}
 
-	// Select the flavour with the max CPU
+	// Select the flavor with the max CPU
 	max := resource.MustParse("0")
 	index := 0
-	for i := range availableFlavours {
-		if availableFlavours[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
-			max = availableFlavours[i].Spec.Characteristics.Cpu
+	for i := range availableFlavors {
+		if availableFlavors[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
+			max = availableFlavors[i].Spec.Characteristics.Cpu
 			index = i
 		}
 	}
 
-	selected := *flavours[index].DeepCopy()
+	selected := *flavors[index].DeepCopy()
 
-	klog.Infof("Flavour %s selected - Parsing...", selected.Name)
-	parsed := parseutil.ParseFlavour(&selected)
+	klog.Infof("Flavor %s selected - Parsing...", selected.Name)
+	parsed := parseutil.ParseFlavor(&selected)
 
-	klog.Infof("Flavour parsed: %v", parsed)
+	klog.Infof("Flavor parsed: %v", parsed)
 
-	// Encode the Flavour as JSON and write it to the response writer
+	// Encode the Flavor as JSON and write it to the response writer
 	encodeResponse(w, parsed)
 }
 
-// getFlavourBySelectorHandler gets the flavour CRs from the cluster that match the selector.
-func (g *Gateway) getFlavoursBySelector(w http.ResponseWriter, r *http.Request) {
+// getFlavorBySelectorHandler gets the flavor CRs from the cluster that match the selector.
+func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	klog.Infof("Processing request for getting Flavours by selector...")
+	klog.Infof("Processing request for getting Flavors by selector...")
 
 	// Read the request body
 	body, err := io.ReadAll(r.Body)
@@ -113,29 +113,29 @@ func (g *Gateway) getFlavoursBySelector(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	flavours, err := services.GetAllFlavours(g.client)
+	flavors, err := services.GetAllFlavors(g.client)
 	if err != nil {
-		klog.Errorf("Error getting all the Flavour CRs: %s", err)
-		http.Error(w, "Error getting all the Flavour CRs", http.StatusInternalServerError)
+		klog.Errorf("Error getting all the Flavor CRs: %s", err)
+		http.Error(w, "Error getting all the Flavor CRs", http.StatusInternalServerError)
 		return
 	}
 
-	klog.Infof("Found %d Flavours in the cluster", len(flavours))
+	klog.Infof("Found %d Flavors in the cluster", len(flavors))
 
-	availableFlavours := make([]nodecorev1alpha1.Flavour, 0)
+	availableFlavors := make([]nodecorev1alpha1.Flavor, 0)
 
-	// Filtering only the available flavours
-	for i := range flavours {
-		if flavours[i].Spec.OptionalFields.Availability {
-			availableFlavours = append(availableFlavours, flavours[i])
+	// Filtering only the available flavors
+	for i := range flavors {
+		if flavors[i].Spec.OptionalFields.Availability {
+			availableFlavors = append(availableFlavors, flavors[i])
 		}
 	}
 
-	klog.Infof("Available Flavours: %d", len(availableFlavours))
-	if len(availableFlavours) == 0 {
-		klog.Infof("No available Flavours found")
+	klog.Infof("Available Flavors: %d", len(availableFlavors))
+	if len(availableFlavors) == 0 {
+		klog.Infof("No available Flavors found")
 		// Return content for empty list
-		emptyList := make([]*nodecorev1alpha1.Flavour, 0)
+		emptyList := make([]*nodecorev1alpha1.Flavor, 0)
 		encodeResponseStatusCode(w, emptyList, http.StatusNoContent)
 		return
 	}
@@ -147,50 +147,50 @@ func (g *Gateway) getFlavoursBySelector(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	klog.Infof("Filtering Flavours by selector...")
-	flavoursSelected, err := common.FilterFlavoursBySelector(availableFlavours, selector)
+	klog.Infof("Filtering Flavors by selector...")
+	flavorsSelected, err := common.FilterFlavorsBySelector(availableFlavors, selector)
 	if err != nil {
-		http.Error(w, "Error getting the Flavours by selector", http.StatusInternalServerError)
+		http.Error(w, "Error getting the Flavors by selector", http.StatusInternalServerError)
 		return
 	}
 
-	klog.Infof("Flavours found that match the selector are: %d", len(flavoursSelected))
+	klog.Infof("Flavors found that match the selector are: %d", len(flavorsSelected))
 
-	if len(flavoursSelected) == 0 {
-		klog.Infof("No matching Flavours found")
+	if len(flavorsSelected) == 0 {
+		klog.Infof("No matching Flavors found")
 		// Return content for empty list
-		emptyList := make([]*nodecorev1alpha1.Flavour, 0)
+		emptyList := make([]*nodecorev1alpha1.Flavor, 0)
 		encodeResponse(w, emptyList)
 		return
 	}
 
-	// Select the flavour with the max CPU
+	// Select the flavor with the max CPU
 	max := resource.MustParse("0")
 	index := 0
 
-	for i := range flavoursSelected {
-		if flavoursSelected[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
-			max = flavoursSelected[i].Spec.Characteristics.Cpu
+	for i := range flavorsSelected {
+		if flavorsSelected[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
+			max = flavorsSelected[i].Spec.Characteristics.Cpu
 			index = i
 		}
 	}
 
-	selected := *flavoursSelected[index].DeepCopy()
+	selected := *flavorsSelected[index].DeepCopy()
 
-	klog.Infof("Flavour %s selected - Parsing...", selected.Name)
-	parsed := parseutil.ParseFlavour(&selected)
+	klog.Infof("Flavor %s selected - Parsing...", selected.Name)
+	parsed := parseutil.ParseFlavor(&selected)
 
-	klog.Infof("Flavour parsed: %v", parsed)
+	klog.Infof("Flavor parsed: %v", parsed)
 
-	// Encode the Flavour as JSON and write it to the response writer
+	// Encode the Flavor as JSON and write it to the response writer
 	encodeResponse(w, parsed)
 }
 
-// reserveFlavour reserves a Flavour by its flavourID.
-func (g *Gateway) reserveFlavour(w http.ResponseWriter, r *http.Request) {
-	// Get the flavourID value from the URL parameters
+// reserveFlavor reserves a Flavor by its flavorID.
+func (g *Gateway) reserveFlavor(w http.ResponseWriter, r *http.Request) {
+	// Get the flavorID value from the URL parameters
 	params := mux.Vars(r)
-	flavourID := params["flavourID"]
+	flavorID := params["flavorID"]
 	var transaction *models.Transaction
 	var request models.ReserveRequest
 
@@ -202,14 +202,14 @@ func (g *Gateway) reserveFlavour(w http.ResponseWriter, r *http.Request) {
 
 	klog.Infof("Partition: %v", *request.Partition)
 
-	if flavourID != request.FlavourID {
-		klog.Infof("Mismatch body & param: %s != %s", flavourID, request.FlavourID)
+	if flavorID != request.FlavorID {
+		klog.Infof("Mismatch body & param: %s != %s", flavorID, request.FlavorID)
 		http.Error(w, "Mismatch body & param", http.StatusConflict)
 		return
 	}
 
 	// Check if the Transaction already exists
-	t, found := g.SearchTransaction(request.Buyer.NodeID, flavourID)
+	t, found := g.SearchTransaction(request.Buyer.NodeID, flavorID)
 	if found {
 		t.StartTime = tools.GetTimeNow()
 		transaction = t
@@ -217,11 +217,11 @@ func (g *Gateway) reserveFlavour(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !found {
-		klog.Infof("Reserving flavour %s started", flavourID)
+		klog.Infof("Reserving flavor %s started", flavorID)
 
-		flavour, _ := services.GetFlavourByID(flavourID, g.client)
-		if flavour == nil {
-			http.Error(w, "Flavour not found", http.StatusNotFound)
+		flavor, _ := services.GetFlavorByID(flavorID, g.client)
+		if flavor == nil {
+			http.Error(w, "Flavor not found", http.StatusNotFound)
 			return
 		}
 
@@ -244,9 +244,9 @@ func (g *Gateway) reserveFlavour(w http.ResponseWriter, r *http.Request) {
 	encodeResponse(w, transaction)
 }
 
-// purchaseFlavour is an handler for purchasing a Flavour.
-func (g *Gateway) purchaseFlavour(w http.ResponseWriter, r *http.Request) {
-	// Get the flavourID value from the URL parameters
+// purchaseFlavor is an handler for purchasing a Flavor.
+func (g *Gateway) purchaseFlavor(w http.ResponseWriter, r *http.Request) {
+	// Get the flavorID value from the URL parameters
 	params := mux.Vars(r)
 	transactionID := params["transactionID"]
 	var purchase models.PurchaseRequest
@@ -272,7 +272,7 @@ func (g *Gateway) purchaseFlavour(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	klog.Infof("Flavour requested: %s", transaction.FlavourID)
+	klog.Infof("Flavor requested: %s", transaction.FlavorID)
 
 	if tools.CheckExpiration(transaction.StartTime, flags.ExpirationTransaction) {
 		klog.Infof("Transaction %s expired", transaction.TransactionID)
@@ -305,18 +305,18 @@ func (g *Gateway) purchaseFlavour(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	klog.Infof("Performing purchase of flavour %s...", transaction.FlavourID)
+	klog.Infof("Performing purchase of flavor %s...", transaction.FlavorID)
 
 	// Remove the transaction from the transactions map
 	g.removeTransaction(transaction.TransactionID)
 
-	klog.Infof("Flavour %s successfully purchased!", transaction.FlavourID)
+	klog.Infof("Flavor %s successfully purchased!", transaction.FlavorID)
 
-	// Get the flavour sold for creating the contract
-	flavourSold, err := services.GetFlavourByID(transaction.FlavourID, g.client)
+	// Get the flavor sold for creating the contract
+	flavorSold, err := services.GetFlavorByID(transaction.FlavorID, g.client)
 	if err != nil {
-		klog.Errorf("Error getting the Flavour by ID: %s", err)
-		http.Error(w, "Error getting the Flavour by ID", http.StatusInternalServerError)
+		klog.Errorf("Error getting the Flavor by ID: %s", err)
+		http.Error(w, "Error getting the Flavor by ID", http.StatusInternalServerError)
 		return
 	}
 
@@ -329,7 +329,7 @@ func (g *Gateway) purchaseFlavour(w http.ResponseWriter, r *http.Request) {
 
 	// Create a new contract
 	klog.Infof("Creating a new contract...")
-	contract = *resourceforge.ForgeContract(flavourSold, &transaction, liqoCredentials)
+	contract = *resourceforge.ForgeContract(flavorSold, &transaction, liqoCredentials)
 	err = g.client.Create(context.Background(), &contract)
 	if err != nil {
 		klog.Errorf("Error creating the Contract: %s", err)
@@ -348,7 +348,7 @@ func (g *Gateway) purchaseFlavour(w http.ResponseWriter, r *http.Request) {
 
 	// Create allocation
 	klog.Infof("Creating allocation...")
-	workerName := contract.Spec.Flavour.Spec.OptionalFields.WorkerID
+	workerName := contract.Spec.Flavor.Spec.OptionalFields.WorkerID
 	allocation := *resourceforge.ForgeAllocation(&contract, "", workerName, nodecorev1alpha1.Remote, nodecorev1alpha1.Node)
 	err = g.client.Create(context.Background(), &allocation)
 	if err != nil {

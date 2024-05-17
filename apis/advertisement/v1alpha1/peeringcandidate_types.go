@@ -27,7 +27,7 @@ import (
 type PeeringCandidateSpec struct {
 	SolverID string `json:"solverID"`
 
-	Flavour nodecorev1alpha1.Flavour `json:"flavour"`
+	Flavor nodecorev1alpha1.Flavor `json:"flavor"`
 
 	Available bool `json:"available"`
 }

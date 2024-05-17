@@ -14,20 +14,20 @@
 
 package models
 
-// PurchaseRequest is the request model for purchasing a Flavour.
+// PurchaseRequest is the request model for purchasing a Flavor.
 type PurchaseRequest struct {
 	TransactionID string `json:"transactionID"`
 }
 
-// ResponsePurchase contain information after purchase a Flavour.
+// ResponsePurchase contain information after purchase a Flavor.
 type ResponsePurchase struct {
 	Contract Contract `json:"contract"`
 	Status   string   `json:"status"`
 }
 
-// ReserveRequest is the request model for reserving a Flavour.
+// ReserveRequest is the request model for reserving a Flavor.
 type ReserveRequest struct {
-	FlavourID string       `json:"flavourID"`
+	FlavorID  string       `json:"flavorID"`
 	Buyer     NodeIdentity `json:"buyerID"`
 	ClusterID string       `json:"clusterID"`
 	Partition *Partition   `json:"partition,omitempty"`

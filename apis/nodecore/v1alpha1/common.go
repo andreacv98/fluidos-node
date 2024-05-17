@@ -47,7 +47,7 @@ type NodeIdentity struct {
 	IP     string `json:"ip"`
 }
 
-// Partition is the partition of the flavour.
+// Partition is the partition of the flavor.
 type Partition struct {
 	Architecture     string            `json:"architecture"`
 	CPU              resource.Quantity `json:"cpu"`

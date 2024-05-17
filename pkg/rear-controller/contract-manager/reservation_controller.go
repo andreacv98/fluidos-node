@@ -175,14 +175,14 @@ func (r *ReservationReconciler) handleReserve(ctx context.Context,
 			return ctrl.Result{}, err
 		}
 
-		flavourID := namings.RetrieveFlavourNameFromPC(reservation.Spec.PeeringCandidate.Name)
-		res, err := r.Gateway.ReserveFlavour(ctx, reservation, flavourID)
+		flavorID := namings.RetrieveFlavorNameFromPC(reservation.Spec.PeeringCandidate.Name)
+		res, err := r.Gateway.ReserveFlavor(ctx, reservation, flavorID)
 		if err != nil {
 			if res != nil {
 				klog.Infof("Transaction is non correctly set, Retrying...")
 				return ctrl.Result{Requeue: true}, nil
 			}
-			klog.Errorf("Error when reserving flavour for Reservation %s: %s", req.NamespacedName, err)
+			klog.Errorf("Error when reserving flavor for Reservation %s: %s", req.NamespacedName, err)
 
 			// Set the peering candidate as available again
 			peeringCandidate.Spec.Available = true
@@ -200,7 +200,7 @@ func (r *ReservationReconciler) handleReserve(ctx context.Context,
 
 			// Set the reservation as failed
 			reservation.SetReserveStatus(nodecorev1alpha1.PhaseFailed)
-			reservation.SetPhase(nodecorev1alpha1.PhaseFailed, "Reservation failed: error when reserving flavour")
+			reservation.SetPhase(nodecorev1alpha1.PhaseFailed, "Reservation failed: error when reserving flavor")
 			if err := r.updateReservationStatus(ctx, reservation); err != nil {
 				klog.Errorf("Error when updating Reservation %s status: %s", req.NamespacedName, err)
 				return ctrl.Result{}, err
@@ -281,9 +281,9 @@ func (r *ReservationReconciler) handlePurchase(ctx context.Context,
 		}
 
 		transactionID := reservation.Status.TransactionID
-		resPurchase, err := r.Gateway.PurchaseFlavour(ctx, transactionID, reservation.Spec.Seller)
+		resPurchase, err := r.Gateway.PurchaseFlavor(ctx, transactionID, reservation.Spec.Seller)
 		if err != nil {
-			klog.Errorf("Error when purchasing flavour for Reservation %s: %s", req.NamespacedName, err)
+			klog.Errorf("Error when purchasing flavor for Reservation %s: %s", req.NamespacedName, err)
 
 			// Set the PeerCandidate as available again
 			var peeringCandidate advertisementv1alpha1.PeeringCandidate
@@ -315,7 +315,7 @@ func (r *ReservationReconciler) handlePurchase(ctx context.Context,
 
 			// Set the reservation as failed
 			reservation.SetPurchaseStatus(nodecorev1alpha1.PhaseFailed)
-			reservation.SetPhase(nodecorev1alpha1.PhaseFailed, "Reservation failed: error when purchasing flavour")
+			reservation.SetPhase(nodecorev1alpha1.PhaseFailed, "Reservation failed: error when purchasing flavor")
 			if err := r.updateReservationStatus(ctx, reservation); err != nil {
 				klog.Errorf("Error when updating Reservation %s status: %s", req.NamespacedName, err)
 				return ctrl.Result{}, err

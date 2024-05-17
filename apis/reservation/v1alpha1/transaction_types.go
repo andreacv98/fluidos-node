@@ -22,16 +22,16 @@ import (
 
 // TransactionSpec defines the desired state of Transaction
 type TransactionSpec struct {
-	// FlavourID is the ID of the flavour that is being reserved
-	FlavourID string `json:"flavourID"`
+	// FlavorID is the ID of the flavor that is being reserved
+	FlavorID string `json:"flavorID"`
 
-	// Buyer is the buyer Identity of the Fluidos Node that is reserving the Flavour
+	// Buyer is the buyer Identity of the Fluidos Node that is reserving the Flavor
 	Buyer nodecorev1alpha1.NodeIdentity `json:"buyer"`
 
-	// ClusterID is the Liqo ClusterID of the Fluidos Node that is reserving the Flavour
+	// ClusterID is the Liqo ClusterID of the Fluidos Node that is reserving the Flavor
 	ClusterID string `json:"clusterID"`
 
-	// Partition is the partition of the flavour that is being reserved
+	// Partition is the partition of the flavor that is being reserved
 	Partition *nodecorev1alpha1.Partition `json:"partition,omitempty"`
 
 	// StartTime is the time at which the reservation should start
@@ -47,7 +47,7 @@ type TransactionStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// +kubebuilder:printcolumn:name="Flavour ID",type="string",JSONPath=".spec.flavourID"
+// +kubebuilder:printcolumn:name="Flavor ID",type="string",JSONPath=".spec.flavorID"
 // +kubebuilder:printcolumn:name="Buyer Name",type="string",JSONPath=".spec.buyer.nodeID"
 // +kubebuilder:printcolumn:name="Buyer IP",type="string",priority=1,JSONPath=".spec.buyer.ip"
 // +kubebuilder:printcolumn:name="Buyer Domain",type="string",priority=1,JSONPath=".spec.buyer.domain"

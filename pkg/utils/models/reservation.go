@@ -16,7 +16,7 @@ package models
 
 import "k8s.io/apimachinery/pkg/api/resource"
 
-// Partition represents the partitioning properties of a Flavour.
+// Partition represents the partitioning properties of a Flavor.
 type Partition struct {
 	Architecture     string            `json:"architecture"`
 	CPU              resource.Quantity `json:"cpu"`
@@ -27,10 +27,10 @@ type Partition struct {
 	Storage          resource.Quantity `json:"storage,omitempty"`
 }
 
-// Transaction contains information regarding the transaction for a flavour.
+// Transaction contains information regarding the transaction for a flavor.
 type Transaction struct {
 	TransactionID string       `json:"transactionID"`
-	FlavourID     string       `json:"flavourID"`
+	FlavorID      string       `json:"flavorID"`
 	Partition     *Partition   `json:"partition,omitempty"`
 	Buyer         NodeIdentity `json:"buyer"`
 	ClusterID     string       `json:"clusterID"`
@@ -41,7 +41,7 @@ type Transaction struct {
 type Contract struct {
 	ContractID        string            `json:"contractID"`
 	TransactionID     string            `json:"transactionID"`
-	Flavour           Flavour           `json:"flavour"`
+	Flavor            Flavor            `json:"flavor"`
 	Buyer             NodeIdentity      `json:"buyerID"`
 	BuyerClusterID    string            `json:"buyerClusterID"`
 	Seller            NodeIdentity      `json:"seller"`

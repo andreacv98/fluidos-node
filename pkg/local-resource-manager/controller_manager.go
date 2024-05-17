@@ -27,7 +27,7 @@ import (
 )
 
 // clusterRole
-//+kubebuilder:rbac:groups=nodecore.fluidos.eu,resources=flavours,verbs=get;list;watch;create;update;patch;delete
+//+kubebuilder:rbac:groups=nodecore.fluidos.eu,resources=flavors,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=nodes,verbs=get;list;watch
 //+kubebuilder:rbac:groups=core,resources=configmaps,verbs=get;list;watch
 //+kubebuilder:rbac:groups=metrics.k8s.io,resources=pods,verbs=get;list;watch
@@ -54,17 +54,17 @@ func Start(ctx context.Context, cl client.Client) error {
 		return err
 	}
 
-	klog.Infof("Creating Flavours: found %d nodes", len(nodes))
+	klog.Infof("Creating Flavors: found %d nodes", len(nodes))
 
-	// For each node create a Flavour
+	// For each node create a Flavor
 	for i := range nodes {
-		flavour := resourceforge.ForgeFlavourFromMetrics(&nodes[i], *nodeIdentity)
-		err := cl.Create(ctx, flavour)
+		flavor := resourceforge.ForgeFlavorFromMetrics(&nodes[i], *nodeIdentity)
+		err := cl.Create(ctx, flavor)
 		if err != nil {
-			log.Printf("Error creating Flavour: %v", err)
+			log.Printf("Error creating Flavor: %v", err)
 			return err
 		}
-		klog.Infof("Flavour created: %s", flavour.Name)
+		klog.Infof("Flavor created: %s", flavor.Name)
 	}
 
 	return nil

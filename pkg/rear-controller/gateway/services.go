@@ -28,8 +28,8 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/resourceforge"
 )
 
-func searchFlavourWithSelector(ctx context.Context, selector *models.Selector, addr string) (*nodecorev1alpha1.Flavour, error) {
-	var flavour models.Flavour
+func searchFlavorWithSelector(ctx context.Context, selector *models.Selector, addr string) (*nodecorev1alpha1.Flavor, error) {
+	var flavor models.Flavor
 
 	// Marshal the selector into JSON bytes
 	selectorBytes, err := json.Marshal(selector)
@@ -38,7 +38,7 @@ func searchFlavourWithSelector(ctx context.Context, selector *models.Selector, a
 	}
 
 	body := bytes.NewBuffer(selectorBytes)
-	url := fmt.Sprintf("http://%s%s", addr, ListFlavoursBySelectorPath)
+	url := fmt.Sprintf("http://%s%s", addr, ListFlavorsBySelectorPath)
 
 	resp, err := makeRequest(ctx, "POST", url, body)
 	if err != nil {
@@ -57,20 +57,20 @@ func searchFlavourWithSelector(ctx context.Context, selector *models.Selector, a
 		return nil, fmt.Errorf("received non-OK response status code: %d", resp.StatusCode)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&flavour); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&flavor); err != nil {
 		klog.Errorf("Error decoding the response body: %s", err)
 		return nil, err
 	}
 
-	flavourCR := resourceforge.ForgeFlavourFromObj(&flavour)
+	flavorCR := resourceforge.ForgeFlavorFromObj(&flavor)
 
-	return flavourCR, nil
+	return flavorCR, nil
 }
 
-func searchFlavour(ctx context.Context, addr string) (*nodecorev1alpha1.Flavour, error) {
-	var flavour models.Flavour
+func searchFlavor(ctx context.Context, addr string) (*nodecorev1alpha1.Flavor, error) {
+	var flavor models.Flavor
 
-	url := fmt.Sprintf("http://%s%s", addr, ListFlavoursPath)
+	url := fmt.Sprintf("http://%s%s", addr, ListFlavorsPath)
 
 	resp, err := makeRequest(ctx, "GET", url, nil)
 	if err != nil {
@@ -88,14 +88,14 @@ func searchFlavour(ctx context.Context, addr string) (*nodecorev1alpha1.Flavour,
 		return nil, fmt.Errorf("received non-OK response status code: %d", resp.StatusCode)
 	}
 
-	if err := json.NewDecoder(resp.Body).Decode(&flavour); err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&flavor); err != nil {
 		klog.Errorf("Error decoding the response body: %s", err)
 		return nil, err
 	}
 
-	flavourCR := resourceforge.ForgeFlavourFromObj(&flavour)
+	flavorCR := resourceforge.ForgeFlavorFromObj(&flavor)
 
-	return flavourCR, nil
+	return flavorCR, nil
 }
 
 func makeRequest(ctx context.Context, method, url string, body *bytes.Buffer) (*http.Response, error) {

@@ -22,8 +22,8 @@ import (
 
 // ContractSpec defines the desired state of Contract.
 type ContractSpec struct {
-	// This is the flavour on which the contract is based. It is used to lifetime maintain the critical characteristics of the contract.
-	Flavour nodecorev1alpha1.Flavour `json:"flavour"`
+	// This is the flavor on which the contract is based. It is used to lifetime maintain the critical characteristics of the contract.
+	Flavor nodecorev1alpha1.Flavor `json:"flavor"`
 
 	// TransactionID is the ID of the transaction that this contract is part of
 	TransactionID string `json:"transactionID"`
@@ -61,7 +61,7 @@ type ContractStatus struct {
 //+kubebuilder:object:root=true
 //+kubebuilder:subresource:status
 
-// +kubebuilder:printcolumn:name="Flavour ID",type=string,JSONPath=`.spec.flavour.metadata.name`
+// +kubebuilder:printcolumn:name="Flavor ID",type=string,JSONPath=`.spec.flavor.metadata.name`
 // +kubebuilder:printcolumn:name="Buyer Name",type=string,JSONPath=`.spec.buyer.nodeID`
 // +kubebuilder:printcolumn:name="Buyer Domain",type=string,priority=1,JSONPath=`.spec.buyer.domain`
 // +kubebuilder:printcolumn:name="Seller Name",type=string,JSONPath=`.spec.seller.nodeID`

@@ -86,10 +86,10 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	//nolint:exhaustive // We don't need to handle all the cases
 	switch discovery.Status.Phase.Phase {
 	case nodecorev1alpha1.PhaseRunning:
-		flavours, err := r.Gateway.DiscoverFlavours(ctx, discovery.Spec.Selector)
+		flavors, err := r.Gateway.DiscoverFlavors(ctx, discovery.Spec.Selector)
 		if err != nil {
-			klog.Errorf("Error when getting Flavour: %s", err)
-			discovery.SetPhase(nodecorev1alpha1.PhaseFailed, "Error when getting Flavour")
+			klog.Errorf("Error when getting Flavor: %s", err)
+			discovery.SetPhase(nodecorev1alpha1.PhaseFailed, "Error when getting Flavor")
 			if err := r.updateDiscoveryStatus(ctx, &discovery); err != nil {
 				klog.Errorf("Error when updating Discovery %s status: %s", req.NamespacedName, err)
 				return ctrl.Result{}, err
@@ -97,9 +97,9 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, nil
 		}
 
-		if len(flavours) == 0 {
-			klog.Infof("No Flavours found")
-			discovery.SetPhase(nodecorev1alpha1.PhaseFailed, "No Flavours found")
+		if len(flavors) == 0 {
+			klog.Infof("No Flavors found")
+			discovery.SetPhase(nodecorev1alpha1.PhaseFailed, "No Flavors found")
 			if err := r.updateDiscoveryStatus(ctx, &discovery); err != nil {
 				klog.Errorf("Error when updating Discovery %s status: %s", req.NamespacedName, err)
 				return ctrl.Result{}, err
@@ -107,10 +107,10 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			return ctrl.Result{}, nil
 		}
 
-		klog.Infof("Flavours found: %d", len(flavours))
+		klog.Infof("Flavors found: %d", len(flavors))
 
-		for _, flavour := range flavours {
-			peeringCandidate = resourceforge.ForgePeeringCandidate(flavour, discovery.Spec.SolverID, true)
+		for _, flavor := range flavors {
+			peeringCandidate = resourceforge.ForgePeeringCandidate(flavor, discovery.Spec.SolverID, true)
 			err = r.Create(context.Background(), peeringCandidate)
 			if err != nil {
 				klog.Infof("Discovery %s failed: error while creating Peering Candidate", discovery.Name)

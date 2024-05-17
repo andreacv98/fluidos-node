@@ -20,9 +20,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
-// Flavour represents a Flavour object with its characteristics and policies.
-type Flavour struct {
-	FlavourID       string          `json:"flavourID"`
+// Flavor represents a Flavor object with its characteristics and policies.
+type Flavor struct {
+	FlavorID        string          `json:"flavorID"`
 	ProviderID      string          `json:"providerID"`
 	Type            string          `json:"type"`
 	Characteristics Characteristics `json:"characteristics"`
@@ -33,7 +33,7 @@ type Flavour struct {
 	OptionalFields  OptionalFields  `json:"optionalFields"`
 }
 
-// Characteristics represents the characteristics of a Flavour, such as CPU and RAM.
+// Characteristics represents the characteristics of a Flavor, such as CPU and RAM.
 type Characteristics struct {
 	CPU               resource.Quantity `json:"cpu,omitempty"`
 	Memory            resource.Quantity `json:"memory,omitempty"`
@@ -44,13 +44,13 @@ type Characteristics struct {
 	Architecture      string            `json:"architecture,omitempty"`
 }
 
-// Policy represents the policy associated with a Flavour, which can be either Partitionable or Aggregatable.
+// Policy represents the policy associated with a Flavor, which can be either Partitionable or Aggregatable.
 type Policy struct {
 	Partitionable *Partitionable `json:"partitionable,omitempty"`
 	Aggregatable  *Aggregatable  `json:"aggregatable,omitempty"`
 }
 
-// Partitionable represents the partitioning properties of a Flavour, such as the minimum and incremental values of CPU and RAM.
+// Partitionable represents the partitioning properties of a Flavor, such as the minimum and incremental values of CPU and RAM.
 type Partitionable struct {
 	CPUMinimum    resource.Quantity `json:"cpuMinimum"`
 	MemoryMinimum resource.Quantity `json:"memoryMinimum"`
@@ -60,41 +60,41 @@ type Partitionable struct {
 	PodsStep      resource.Quantity `json:"podsStep"`
 }
 
-// Aggregatable represents the aggregation properties of a Flavour, such as the minimum instance count.
+// Aggregatable represents the aggregation properties of a Flavor, such as the minimum instance count.
 type Aggregatable struct {
 	MinCount int `json:"minCount"`
 	MaxCount int `json:"maxCount"`
 }
 
-// NodeIdentity represents the owner of a Flavour, with associated ID, IP, and domain name.
+// NodeIdentity represents the owner of a Flavor, with associated ID, IP, and domain name.
 type NodeIdentity struct {
 	NodeID string `json:"ID"`
 	IP     string `json:"IP"`
 	Domain string `json:"domain"`
 }
 
-// Price represents the price of a Flavour, with the amount, currency, and period associated.
+// Price represents the price of a Flavor, with the amount, currency, and period associated.
 type Price struct {
 	Amount   string `json:"amount"`
 	Currency string `json:"currency"`
 	Period   string `json:"period"`
 }
 
-// OptionalFields represents the optional fields of a Flavour, such as availability.
+// OptionalFields represents the optional fields of a Flavor, such as availability.
 type OptionalFields struct {
 	Availability bool   `json:"availability,omitempty"`
 	WorkerID     string `json:"workerID"`
 }
 
-// Selector represents the criteria for selecting Flavours.
+// Selector represents the criteria for selecting Flavors.
 type Selector struct {
-	FlavourType   string         `json:"type,omitempty"`
+	FlavorType    string         `json:"type,omitempty"`
 	Architecture  string         `json:"architecture,omitempty"`
 	RangeSelector *RangeSelector `json:"rangeSelector,omitempty"`
 	MatchSelector *MatchSelector `json:"matchSelector,omitempty"`
 }
 
-// MatchSelector represents the criteria for selecting Flavours through a strict match.
+// MatchSelector represents the criteria for selecting Flavors through a strict match.
 type MatchSelector struct {
 	CPU              resource.Quantity `json:"cpu,omitempty"`
 	Memory           resource.Quantity `json:"memory,omitempty"`
@@ -104,7 +104,7 @@ type MatchSelector struct {
 	Gpu              resource.Quantity `json:"gpu,omitempty"`
 }
 
-// RangeSelector represents the criteria for selecting Flavours through a range.
+// RangeSelector represents the criteria for selecting Flavors through a range.
 type RangeSelector struct {
 	MinCPU     resource.Quantity `json:"minCpu,omitempty"`
 	MinMemory  resource.Quantity `json:"minMemory,omitempty"`

@@ -30,14 +30,14 @@ type PhaseStatus struct {
 	EndTime        string `json:"endTime,omitempty"`
 }
 
-type FlavourSelector struct {
-	FlavourType   string         `json:"type"`
+type FlavorSelector struct {
+	FlavorType    string         `json:"type"`
 	Architecture  string         `json:"architecture"`
 	RangeSelector *RangeSelector `json:"rangeSelector,omitempty"`
 	MatchSelector *MatchSelector `json:"matchSelector,omitempty"`
 }
 
-// MatchSelector represents the criteria for selecting Flavours through a strict match.
+// MatchSelector represents the criteria for selecting Flavors through a strict match.
 type MatchSelector struct {
 	CPU              resource.Quantity `json:"cpu,omitempty"`
 	Memory           resource.Quantity `json:"memory,omitempty"`
@@ -47,7 +47,7 @@ type MatchSelector struct {
 	Gpu              resource.Quantity `json:"gpu,omitempty"`
 }
 
-// RangeSelector represents the criteria for selecting Flavours through a range.
+// RangeSelector represents the criteria for selecting Flavors through a range.
 type RangeSelector struct {
 	MinCpu     resource.Quantity `json:"minCpu,omitempty"`
 	MinMemory  resource.Quantity `json:"minMemory,omitempty"`
@@ -66,8 +66,8 @@ type RangeSelector struct {
 // SolverSpec defines the desired state of Solver
 type SolverSpec struct {
 
-	// Selector contains the flavour requirements for the solver.
-	Selector *FlavourSelector `json:"selector,omitempty"`
+	// Selector contains the flavor requirements for the solver.
+	Selector *FlavorSelector `json:"selector,omitempty"`
 
 	// IntentID is the ID of the intent that the Node Orchestrator is trying to solve.
 	// It is used to link the solver with the intent.
@@ -87,10 +87,10 @@ type SolverSpec struct {
 type SolverStatus struct {
 
 	// FindCandidate describes the status of research of the candidate.
-	// Rear Manager is looking for the best candidate Flavour to solve the Node Orchestrator request.
+	// Rear Manager is looking for the best candidate Flavor to solve the Node Orchestrator request.
 	FindCandidate Phase `json:"findCandidate,omitempty"`
 
-	// ReserveAndBuy describes the status of the reservation and purchase of selected Flavour.
+	// ReserveAndBuy describes the status of the reservation and purchase of selected Flavor.
 	// Rear Manager is trying to reserve and purchase the resources on the candidate FLUIDOS Node.
 	ReserveAndBuy Phase `json:"reserveAndBuy,omitempty"`
 
@@ -99,7 +99,7 @@ type SolverStatus struct {
 	Peering Phase `json:"peering,omitempty"`
 
 	// DiscoveryPhase describes the status of the Discovery where the Discovery Manager
-	// is looking for matching flavours outside the FLUIDOS Node
+	// is looking for matching flavors outside the FLUIDOS Node
 	DiscoveryPhase Phase `json:"discoveryPhase,omitempty"`
 
 	// ReservationPhase describes the status of the Reservation where the Contract Manager

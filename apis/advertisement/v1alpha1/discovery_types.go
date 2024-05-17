@@ -30,12 +30,12 @@ type DiscoverySpec struct {
 	// This is a reference to the Solver CRD
 	SolverID string `json:"solverID"`
 
-	// This is the FlavourSelector that describes the characteristics of the intent that the solver is looking to satisfy
+	// This is the FlavorSelector that describes the characteristics of the intent that the solver is looking to satisfy
 	// This pattern corresponds to what has been defined in the REAR Protocol to do a discovery with a selector
-	Selector *nodecorev1alpha1.FlavourSelector `json:"selector"`
+	Selector *nodecorev1alpha1.FlavorSelector `json:"selector"`
 
 	// This flag indicates that needs to be established a subscription to the provider in case a match is found.
-	// In order to have periodic updates of the status of the matching Flavour
+	// In order to have periodic updates of the status of the matching Flavor
 	Subscribe bool `json:"subscribe"`
 }
 

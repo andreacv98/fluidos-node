@@ -15,8 +15,8 @@ spec:
   scope: Namespaced
   versions:
   - additionalPrinterColumns:
-    - jsonPath: .spec.flavourID
-      name: Flavour ID
+    - jsonPath: .spec.flavorID
+      name: Flavor ID
       type: string
     - jsonPath: .spec.buyer.nodeID
       name: Buyer Name
@@ -62,7 +62,7 @@ spec:
             properties:
               buyer:
                 description: Buyer is the buyer Identity of the Fluidos Node that
-                  is reserving the Flavour
+                  is reserving the Flavor
                 properties:
                   domain:
                     type: string
@@ -77,13 +77,13 @@ spec:
                 type: object
               clusterID:
                 description: ClusterID is the Liqo ClusterID of the Fluidos Node that
-                  is reserving the Flavour
+                  is reserving the Flavor
                 type: string
-              flavourID:
-                description: FlavourID is the ID of the flavour that is being reserved
+              flavorID:
+                description: FlavorID is the ID of the flavor that is being reserved
                 type: string
               partition:
-                description: Partition is the partition of the flavour that is being
+                description: Partition is the partition of the flavor that is being
                   reserved
                 properties:
                   architecture:
@@ -137,7 +137,7 @@ spec:
             required:
             - buyer
             - clusterID
-            - flavourID
+            - flavorID
             type: object
           status:
             description: TransactionStatus defines the observed state of Transaction
