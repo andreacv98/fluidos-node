@@ -28,7 +28,6 @@ import (
 // ParseFlavorSelector parses FlavorSelector into a Selector.
 func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Selector {
 	s := &models.Selector{
-		Architecture: selector.Architecture,
 		FlavorType:   selector.FlavorType,
 	}
 
@@ -38,7 +37,7 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Sele
 			Memory:  selector.MatchSelector.Memory,
 			Pods:    selector.MatchSelector.Pods,
 			Storage: selector.MatchSelector.Storage,
-			Gpu: models.GpuCharacteristics{
+			Gpu: &models.GpuCharacteristics{
 				Model:  selector.MatchSelector.Gpu.Model,
 				Cores:  selector.MatchSelector.Gpu.Cores,
 				Memory: selector.MatchSelector.Gpu.Memory,
@@ -52,7 +51,7 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Sele
 			MinMemory:  selector.RangeSelector.MinMemory,
 			MinPods:    selector.RangeSelector.MinPods,
 			MinStorage: selector.RangeSelector.MinStorage,
-			MinGpu: models.GpuCharacteristics{
+			MinGpu: &models.GpuCharacteristics{
 				Model:  selector.RangeSelector.MinGpu.Model,
 				Cores:  selector.RangeSelector.MinGpu.Cores,
 				Memory: selector.RangeSelector.MinGpu.Memory,
@@ -61,7 +60,7 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Sele
 			MaxMemory:  selector.RangeSelector.MaxMemory,
 			MaxPods:    selector.RangeSelector.MaxPods,
 			MaxStorage: selector.RangeSelector.MaxStorage,
-			MaxGpu: models.GpuCharacteristics{
+			MaxGpu: &models.GpuCharacteristics{
 				Model:  selector.RangeSelector.MaxGpu.Model,
 				Cores:  selector.RangeSelector.MaxGpu.Cores,
 				Memory: selector.RangeSelector.MaxGpu.Memory,
@@ -93,7 +92,7 @@ func ParsePartitionFromObj(partition *models.Partition) *nodecorev1alpha1.Partit
 		CPU:    partition.CPU,
 		Memory: partition.Memory,
 		Pods:   partition.Pods,
-		Gpu: nodecorev1alpha1.GPU{
+		Gpu:	&nodecorev1alpha1.GPU{
 			Model:  partition.Gpu.Model,
 			Cores:  partition.Gpu.Cores,
 			Memory: partition.Gpu.Memory,

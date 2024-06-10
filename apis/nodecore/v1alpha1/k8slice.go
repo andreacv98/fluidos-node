@@ -19,7 +19,7 @@ import "k8s.io/apimachinery/pkg/api/resource"
 // K8Slice represents a K8Slice Flavor.
 type K8Slice struct {
 	// Characteristics of the K8Slice Flavor
-	Characteristics Characteristics `json:"characteristics"`
+	Characteristics K8SliceCharacteristics `json:"characteristics"`
 	// Properties of the K8Slice Flavor
 	Properties Properties `json:"properties"`
 	// Policies of the K8Slice Flavor
@@ -31,8 +31,8 @@ func (k8s *K8Slice) GetFlavorType() FlavorTypeIdentifier {
 	return Type_K8Slice
 }
 
-// Characteristics represents the characteristics of a K8Slice Flavor, such as the CPU, RAM, and storage.
-type Characteristics struct {
+// K8SliceCharacteristics represents the characteristics of a K8Slice Flavor, such as the CPU, RAM, and storage.
+type K8SliceCharacteristics struct {
 	// CPU is the number of CPU cores of the K8Slice Flavor.
 	Cpu resource.Quantity `json:"cpu"`
 	// Memory is the amount of RAM of the K8Slice Flavor.

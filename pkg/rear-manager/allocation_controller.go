@@ -16,6 +16,7 @@ package rearmanager
 
 import (
 	"context"
+	"encoding/json"
 
 	liqodiscovery "github.com/liqotech/liqo/apis/discovery/v1alpha1"
 	discovery "github.com/liqotech/liqo/pkg/discovery"
@@ -36,6 +37,7 @@ import (
 	reservation "github.com/fluidos-project/node/apis/reservation/v1alpha1"
 	"github.com/fluidos-project/node/pkg/utils/flags"
 	"github.com/fluidos-project/node/pkg/utils/getters"
+	"github.com/fluidos-project/node/pkg/utils/parseutil"
 	"github.com/fluidos-project/node/pkg/utils/resourceforge"
 	"github.com/fluidos-project/node/pkg/utils/services"
 	virtualfabricmanager "github.com/fluidos-project/node/pkg/virtual-fabric-manager"
@@ -201,8 +203,8 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 			return ctrl.Result{}, nil
 		}
 		flavorCopy := flavor.DeepCopy()
-		flavorCopy.Spec.OptionalFields.Availability = false
-		klog.Infof("Updating Flavor %s: Availability %t", flavorCopy.Name, flavorCopy.Spec.OptionalFields.Availability)
+		flavorCopy.Spec.Availability = false
+		klog.Infof("Updating Flavor %s: Availability %t", flavorCopy.Name, flavorCopy.Spec.Availability)
 		// TODO: Known issue, availability will be not updated
 		if err := r.Client.Update(ctx, flavorCopy); err != nil {
 			klog.Errorf("Error when updating Flavor %s: %v", flavorCopy.Name, err)
@@ -216,11 +218,60 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 
 		if contract.Spec.Partition != nil {
 			// We need to create a new Flavor with the right Partition
-			flavorRes := contract.Spec.Flavor.Spec.Characteristics
-			allocationRes := computeResources(contract)
 
-			newCharacteristics := computeCharacteristics(&flavorRes, allocationRes)
-			newFlavor := resourceforge.ForgeFlavorFromRef(flavor, newCharacteristics)
+			// Parse Flavor to get the K8Slice Characteristics
+
+			err, flavorTypeIdentifier, FlavorType := parseutil.ParseFlavorType(&contract.Spec.Flavor)
+
+			if err != nil {
+				klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)
+				allocation.SetStatus(nodecorev1alpha1.Error, "Error when parsing Flavor")
+				if err := r.updateAllocationStatus(ctx, allocation); err != nil {
+					klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{}, nil
+			}
+
+			// TODO: if is not a K8Slice type, we need to handle it, not break everything
+			if flavorTypeIdentifier != nodecorev1alpha1.Type_K8Slice {
+				klog.Errorf("Flavor %s is not a K8Slice type", contract.Spec.Flavor.Name)
+				allocation.SetStatus(nodecorev1alpha1.Error, "Flavor is not a K8Slice type")
+				if err := r.updateAllocationStatus(ctx, allocation); err != nil {
+					klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{}, nil
+			}
+
+			// We are handling a K8Slice type
+			// Get characteristics forcing casting
+			flavorRes := FlavorType.(*nodecorev1alpha1.K8Slice).Characteristics
+			allocationRes := computeK8SliceResources(contract)
+
+			newCharacteristics := computeK8SliceCharacteristics(&flavorRes, allocationRes)
+			newK8Slice := &nodecorev1alpha1.K8Slice{
+				Characteristics: *newCharacteristics,
+				Policies:       *FlavorType.(*nodecorev1alpha1.K8Slice).Policies.DeepCopy(),
+				Properties:     *FlavorType.(*nodecorev1alpha1.K8Slice).Properties.DeepCopy(),
+			}
+			newK8SliceBytes, err := json.Marshal(newK8Slice)
+
+			if err != nil {
+				klog.Errorf("Error when marshaling new K8Slice %s: %v", contract.Spec.Flavor.Name, err)
+				allocation.SetStatus(nodecorev1alpha1.Error, "Error when marshaling new K8Slice")
+				if err := r.updateAllocationStatus(ctx, allocation); err != nil {
+					klog.Errorf("Error when updating Allocation %s status: %v", req.NamespacedName, err)
+					return ctrl.Result{}, err
+				}
+				return ctrl.Result{}, nil
+			}
+
+			newFlavorType := &nodecorev1alpha1.FlavorType{
+				TypeIdentifier: nodecorev1alpha1.Type_K8Slice,
+				TypeData:       runtime.RawExtension{Raw: newK8SliceBytes},
+			}
+			newFlavor := resourceforge.ForgeFlavorFromRef(flavor, newFlavorType)
 
 			if err := r.Client.Create(ctx, newFlavor); err != nil {
 				klog.Errorf("Error when creating Flavor %s: %v", newFlavor.Name, err)
@@ -348,39 +399,60 @@ func (r *AllocationReconciler) handleVirtualNodeAllocation(ctx context.Context,
 	}
 }
 
-func computeResources(contract *reservation.Contract) *nodecorev1alpha1.Characteristics {
-	if contract.Spec.Partition != nil {
-		return &nodecorev1alpha1.Characteristics{
-			Architecture:      contract.Spec.Partition.Architecture,
-			Cpu:               contract.Spec.Partition.CPU,
-			Memory:            contract.Spec.Partition.Memory,
-			Pods:              contract.Spec.Partition.Pods,
-			EphemeralStorage:  contract.Spec.Partition.EphemeralStorage,
-			Gpu:               contract.Spec.Partition.Gpu,
-			PersistentStorage: contract.Spec.Partition.Storage,
-		}
+func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K8SliceCharacteristics {
+	// Check Flavor in the Contract is a K8Slice type
+
+	err, flavorTypeIdentifier, FlavorType := parseutil.ParseFlavorType(&contract.Spec.Flavor)
+
+	if err != nil {
+		klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)
+		return nil
 	}
-	return contract.Spec.Flavor.Spec.Characteristics.DeepCopy()
+
+	if flavorTypeIdentifier != nodecorev1alpha1.Type_K8Slice {
+
+		if contract.Spec.Partition != nil {
+			return &nodecorev1alpha1.K8SliceCharacteristics{
+				Cpu:				contract.Spec.Partition.CPU,
+				Memory:				contract.Spec.Partition.Memory,
+				Pods:				contract.Spec.Partition.Pods,
+				Storage:			contract.Spec.Partition.Storage,
+				Gpu:				contract.Spec.Partition.Gpu,
+			}
+		}
+		return FlavorType.(*nodecorev1alpha1.K8Slice).Characteristics.DeepCopy()
+
+	} else {
+		// Flavor Type is NOT K8Slice
+		klog.Errorf("Flavor %s is not a K8Slice type", contract.Spec.Flavor.Name)
+		return nil
+	}
 }
 
-func computeCharacteristics(origin, part *nodecorev1alpha1.Characteristics) *nodecorev1alpha1.Characteristics {
+func computeK8SliceCharacteristics(origin, part *nodecorev1alpha1.K8SliceCharacteristics) *nodecorev1alpha1.K8SliceCharacteristics {
 	newCPU := origin.Cpu.DeepCopy()
 	newMemory := origin.Memory.DeepCopy()
-	newStorage := origin.PersistentStorage.DeepCopy()
-	newGpu := origin.Gpu.DeepCopy()
-	newEphemeralStorage := origin.EphemeralStorage.DeepCopy()
+	newStorage := origin.Storage.DeepCopy()
+	newPods := origin.Pods.DeepCopy()
+	newGpuCores := origin.Gpu.Cores.DeepCopy()
+	newGpuMemory := origin.Gpu.Memory.DeepCopy()
 	newCPU.Sub(part.Cpu)
 	newMemory.Sub(part.Memory)
-	newStorage.Sub(part.PersistentStorage)
-	newGpu.Sub(part.Gpu)
-	newEphemeralStorage.Sub(part.EphemeralStorage)
-	return &nodecorev1alpha1.Characteristics{
-		Architecture:      origin.Architecture,
+	newPods.Sub(part.Pods)
+	newStorage.Sub(part.Storage)
+	newGpuCores.Sub(part.Gpu.Cores)
+	newGpuMemory.Sub(part.Gpu.Memory)
+	newGpu := &nodecorev1alpha1.GPU{
+		Model:  part.Gpu.Model,
+		Cores:  newGpuCores,
+		Memory: newGpuMemory,
+	}
+	return &nodecorev1alpha1.K8SliceCharacteristics{
 		Cpu:               newCPU,
 		Memory:            newMemory,
+		Pods:              newPods,
 		Gpu:               newGpu,
-		PersistentStorage: newStorage,
-		EphemeralStorage:  newEphemeralStorage,
+		Storage:           newStorage,
 	}
 }
 

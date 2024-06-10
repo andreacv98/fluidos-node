@@ -154,7 +154,7 @@ func ForgeContract(flavor *nodecorev1alpha1.Flavor, transaction *models.Transact
 func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity) (flavor *nodecorev1alpha1.Flavor) {
 
 	k8SliceType := nodecorev1alpha1.K8Slice{
-		Characteristics: nodecorev1alpha1.Characteristics{
+		Characteristics: nodecorev1alpha1.K8SliceCharacteristics{
 			Cpu:     node.ResourceMetrics.CPUAvailable,
 			Memory:  node.ResourceMetrics.MemoryAvailable,
 			Pods:    node.ResourceMetrics.PodsAvailable,
@@ -369,7 +369,7 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 	switch flavor.Type.GetFlavorTypeName() {
 	case models.K8SliceNameDefault:
 		flavorTypeData := nodecorev1alpha1.K8Slice{
-			Characteristics: nodecorev1alpha1.Characteristics{
+			Characteristics: nodecorev1alpha1.K8SliceCharacteristics{
 				Cpu:     flavor.Type.(models.K8Slice).Characteristics.Cpu,
 				Memory:  flavor.Type.(models.K8Slice).Characteristics.Memory,
 				Pods:    flavor.Type.(models.K8Slice).Characteristics.Pods,

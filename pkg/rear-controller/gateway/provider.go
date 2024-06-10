@@ -76,11 +76,20 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 	index := 0
 	for i := range availableFlavors {
 		err, flavorTypeIdentifier, flavorTypeData := parseutil.ParseFlavorType(&availableFlavors[i])
+		if err != nil {
+			klog.Errorf("Error parsing the Flavor type: %s", err)
+			http.Error(w, "Error parsing the Flavor type", http.StatusInternalServerError)
+			return
+		}
 		if flavorTypeIdentifier == nodecorev1alpha1.Type_K8Slice {
-			if flavorTypeData.(nodecorev1alpha1.K8Slice).Characteristics.Cpu.Cmp(max) == 1 {
-				max = availableFlavors[i].Spec.Characteristics.Cpu
+
+			k8Slice := flavorTypeData.(nodecorev1alpha1.K8Slice)
+
+			if k8Slice.Characteristics.Cpu.Cmp(max) == 1 {
+				max = k8Slice.Characteristics.Cpu
 				index = i
 			}
+
 		}
 		
 	}
@@ -130,7 +139,7 @@ func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 
 	// Filtering only the available flavors
 	for i := range flavors {
-		if flavors[i].Spec.OptionalFields.Availability {
+		if flavors[i].Spec.Availability {
 			availableFlavors = append(availableFlavors, flavors[i])
 		}
 	}
@@ -172,11 +181,24 @@ func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 	max := resource.MustParse("0")
 	index := 0
 
-	for i := range flavorsSelected {
-		if flavorsSelected[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
-			max = flavorsSelected[i].Spec.Characteristics.Cpu
-			index = i
+	for i := range availableFlavors {
+		err, flavorTypeIdentifier, flavorTypeData := parseutil.ParseFlavorType(&availableFlavors[i])
+		if err != nil {
+			klog.Errorf("Error parsing the Flavor type: %s", err)
+			http.Error(w, "Error parsing the Flavor type", http.StatusInternalServerError)
+			return
 		}
+		if flavorTypeIdentifier == nodecorev1alpha1.Type_K8Slice {
+
+			k8Slice := flavorTypeData.(nodecorev1alpha1.K8Slice)
+
+			if k8Slice.Characteristics.Cpu.Cmp(max) == 1 {
+				max = k8Slice.Characteristics.Cpu
+				index = i
+			}
+
+		}
+		
 	}
 
 	selected := *flavorsSelected[index].DeepCopy()
@@ -352,8 +374,7 @@ func (g *Gateway) purchaseFlavor(w http.ResponseWriter, r *http.Request) {
 
 	// Create allocation
 	klog.Infof("Creating allocation...")
-	workerName := contract.Spec.Flavor.Spec.OptionalFields.WorkerID
-	allocation := *resourceforge.ForgeAllocation(&contract, "", workerName, nodecorev1alpha1.Remote, nodecorev1alpha1.Node)
+	allocation := *resourceforge.ForgeAllocation(&contract, "", "", nodecorev1alpha1.Remote, nodecorev1alpha1.Node)
 	err = g.client.Create(context.Background(), &allocation)
 	if err != nil {
 		klog.Errorf("Error creating the Allocation: %s", err)

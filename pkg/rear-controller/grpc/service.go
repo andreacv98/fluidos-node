@@ -79,6 +79,6 @@ func mapQuantityToResourceList(partition *nodecorev1alpha1.Partition) map[string
 	resources[corev1.ResourceMemory.String()] = &partition.Memory
 	resources[corev1.ResourcePods.String()] = &partition.Pods
 	resources[corev1.ResourceStorage.String()] = &partition.Storage
-	resources[corev1.ResourceEphemeralStorage.String()] = &partition.EphemeralStorage
+	resources[corev1.ResourceEphemeralStorage.String()] = &partition.Storage
 	return resources
 }
