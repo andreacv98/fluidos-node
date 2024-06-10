@@ -252,8 +252,8 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 			newCharacteristics := computeK8SliceCharacteristics(&flavorRes, allocationRes)
 			newK8Slice := &nodecorev1alpha1.K8Slice{
 				Characteristics: *newCharacteristics,
-				Policies:       *FlavorType.(*nodecorev1alpha1.K8Slice).Policies.DeepCopy(),
-				Properties:     *FlavorType.(*nodecorev1alpha1.K8Slice).Properties.DeepCopy(),
+				Policies:        *FlavorType.(*nodecorev1alpha1.K8Slice).Policies.DeepCopy(),
+				Properties:      *FlavorType.(*nodecorev1alpha1.K8Slice).Properties.DeepCopy(),
 			}
 			newK8SliceBytes, err := json.Marshal(newK8Slice)
 
@@ -413,11 +413,11 @@ func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K
 
 		if contract.Spec.Partition != nil {
 			return &nodecorev1alpha1.K8SliceCharacteristics{
-				Cpu:				contract.Spec.Partition.CPU,
-				Memory:				contract.Spec.Partition.Memory,
-				Pods:				contract.Spec.Partition.Pods,
-				Storage:			contract.Spec.Partition.Storage,
-				Gpu:				contract.Spec.Partition.Gpu,
+				Cpu:     contract.Spec.Partition.CPU,
+				Memory:  contract.Spec.Partition.Memory,
+				Pods:    contract.Spec.Partition.Pods,
+				Storage: contract.Spec.Partition.Storage,
+				Gpu:     contract.Spec.Partition.Gpu,
 			}
 		}
 		return FlavorType.(*nodecorev1alpha1.K8Slice).Characteristics.DeepCopy()
@@ -448,11 +448,11 @@ func computeK8SliceCharacteristics(origin, part *nodecorev1alpha1.K8SliceCharact
 		Memory: newGpuMemory,
 	}
 	return &nodecorev1alpha1.K8SliceCharacteristics{
-		Cpu:               newCPU,
-		Memory:            newMemory,
-		Pods:              newPods,
-		Gpu:               newGpu,
-		Storage:           newStorage,
+		Cpu:     newCPU,
+		Memory:  newMemory,
+		Pods:    newPods,
+		Gpu:     newGpu,
+		Storage: newStorage,
 	}
 }
 

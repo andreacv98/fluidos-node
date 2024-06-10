@@ -10,7 +10,6 @@ spec:
     - port: 443
       protocol: TCP
       name: https
-      targetPort: webhook #9443
+      targetPort: 9443 #9443
   selector:
-    matchLabels:
-      {{- include "fluidos.labels" $resManagerConfig | nindent 6 }}
+    {{- include "fluidos.labels" $resManagerConfig | nindent 6 }}

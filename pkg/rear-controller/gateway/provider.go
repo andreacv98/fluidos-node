@@ -91,7 +91,7 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 			}
 
 		}
-		
+
 	}
 
 	selected := *flavors[index].DeepCopy()
@@ -198,7 +198,7 @@ func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 			}
 
 		}
-		
+
 	}
 
 	selected := *flavorsSelected[index].DeepCopy()

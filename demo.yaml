@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: node-local-resource-manager
+  namespace: fluidos
+spec:
+  ports:
+    - port: 443
+      protocol: TCP
+      name: https
+      targetPort: 9443 #9443
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: "local-resource-manager"
+      app.kubernetes.io/instance: "node-local-resource-manager"
+      app.kubernetes.io/component: "local-resource-manager"
+      app.kubernetes.io/part-of: "node"
+      helm.sh/chart: node-0.0.1
+      app.kubernetes.io/version: "0.0.1"
+      app.kubernetes.io/managed-by: "Helm"

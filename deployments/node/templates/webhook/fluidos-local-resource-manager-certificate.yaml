@@ -11,5 +11,5 @@ spec:
   - {{ include "fluidos.prefixedName" $resManagerConfig }}.{{ .Release.Namespace }}.svc.cluster.local
   issuerRef:
     kind: Issuer
-    name: {{ .Values.webhook.clusterIssuer | default "self-signed" }}
+    name: {{ .Values.webhook.Issuer | default "self-signed" }}
   secretName: {{ include "fluidos.prefixedName" $resManagerConfig }}

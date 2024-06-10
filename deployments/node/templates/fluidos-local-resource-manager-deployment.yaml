@@ -57,6 +57,9 @@ spec:
         - name: healthz
           containerPort: 8081
           protocol: TCP
+        - name: webhook
+          containerPort: 9443
+          protocol: TCP
         readinessProbe:
           httpGet:
             path: /readyz

@@ -28,7 +28,7 @@ import (
 // ParseFlavorSelector parses FlavorSelector into a Selector.
 func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Selector {
 	s := &models.Selector{
-		FlavorType:   selector.FlavorType,
+		FlavorType: selector.FlavorType,
 	}
 
 	if selector.MatchSelector != nil {
@@ -92,7 +92,7 @@ func ParsePartitionFromObj(partition *models.Partition) *nodecorev1alpha1.Partit
 		CPU:    partition.CPU,
 		Memory: partition.Memory,
 		Pods:   partition.Pods,
-		Gpu:	&nodecorev1alpha1.GPU{
+		Gpu: &nodecorev1alpha1.GPU{
 			Model:  partition.Gpu.Model,
 			Cores:  partition.Gpu.Cores,
 			Memory: partition.Gpu.Memory,

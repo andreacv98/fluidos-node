@@ -180,6 +180,12 @@ function install_components() {
         echo "Waiting for metrics-server to be ready"
         kubectl wait --for=condition=ready pod -l k8s-app=metrics-server -n kube-system --timeout=300s --kubeconfig "$KUBECONFIG"
 
+        # Install the cert-manager Helm chart
+        echo "Installing cert-manager Helm chart in cluster $cluster"
+        helm repo add jetstack https://charts.jetstack.io --force-update
+        helm repo update
+        helm install cert-manager jetstack/cert-manager --namespace cert-manager --create-namespace --version v1.15.0 --set crds.enabled=true --kubeconfig "$KUBECONFIG"
+
         # Decide value file to use based on the role of the cluster
         if [ "$(jq -r '.role' <<< "${clusters[$cluster]}")" == "consumer" ]; then
             # Check if local resouce manager is enabled
