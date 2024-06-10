@@ -1,0 +1,11 @@
+{{- $resManagerConfig := (merge (dict "name" "local-resource-manager" "module" "local-resource-manager") .) -}}
+
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    {{- include "fluidos.labels" $resManagerConfig | nindent 4 }}
+  name: {{ .Values.webhook.clusterIssuer | default "self-signed" }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  selfSigned: {}

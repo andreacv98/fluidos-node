@@ -88,6 +88,8 @@ spec:
                     type: string
                   ip:
                     type: string
+                  liqoID:
+                    type: string
                   nodeID:
                     type: string
                 required:
@@ -170,6 +172,8 @@ spec:
                   domain:
                     type: string
                   ip:
+                    type: string
+                  liqoID:
                     type: string
                   nodeID:
                     type: string

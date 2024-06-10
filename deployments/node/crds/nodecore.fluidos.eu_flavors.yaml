@@ -11,6 +11,8 @@ spec:
     kind: Flavor
     listKind: FlavorList
     plural: flavors
+    shortNames:
+    - fl
     singular: flavor
   scope: Namespaced
   versions:
@@ -68,79 +70,16 @@ spec:
           spec:
             description: FlavorSpec defines the desired state of Flavor
             properties:
-              characteristics:
-                description: |-
-                  Characteristics contains the characteristics of the Flavor.
-                  They are based on the type of the Flavor and can change depending on it. In this case, the type is K8S so the characteristics are CPU, Memory, GPU and EphemeralStorage.
-                properties:
-                  architecture:
-                    description: Architecture is the architecture of the Flavor.
-                    type: string
-                  cpu:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: CPU is the number of CPU cores of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                  ephemeral-storage:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: EphemeralStorage is the amount of ephemeral storage
-                      of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                  gpu:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: GPU is the number of GPU cores of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                  memory:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: Memory is the amount of RAM of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                  persistent-storage:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: PersistentStorage is the amount of persistent storage
-                      of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                  pods:
-                    anyOf:
-                    - type: integer
-                    - type: string
-                    description: Pods is the maximum number of pods of the Flavor.
-                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                    x-kubernetes-int-or-string: true
-                required:
-                - architecture
-                - cpu
-                - memory
-                - pods
-                type: object
-              optionalFields:
-                description: |-
-                  This field is used to specify the optional fields that can be retrieved from the Flavor.
-                  In the future it will be expanded to include more optional fields defined in the REAR Protocol or custom ones.
-                properties:
-                  availability:
-                    description: |-
-                      Availability is the availability flag of the Flavor.
-                      It is a field inherited from the REAR Protocol specifications.
-                    type: boolean
-                  workerID:
-                    description: WorkerID is the ID of the worker that provides the
-                      Flavor.
-                    type: string
-                type: object
+              availability:
+                description: Availability is the availability flag of the Flavor.
+                type: boolean
+              location:
+                description: Location is the location of the Flavor.
+                type: string
+              networkPropertyType:
+                description: NetworkPropertyType is the network property type of the
+                  Flavor.
+                type: string
               owner:
                 description: Owner contains the identity info of the owner of the
                   Flavor. It can be unknown if the Flavor is provided by a reseller
@@ -150,93 +89,14 @@ spec:
                     type: string
                   ip:
                     type: string
+                  liqoID:
+                    type: string
                   nodeID:
                     type: string
                 required:
                 - domain
                 - ip
                 - nodeID
-                type: object
-              policy:
-                description: Policy contains the policy of the Flavor. The policy
-                  describes the partitioning and aggregation properties of the Flavor.
-                properties:
-                  aggregatable:
-                    description: Aggregatable contains the aggregation properties
-                      of the Flavor.
-                    properties:
-                      maxCount:
-                        description: MaxCount is the maximum requirable number of
-                          instances of the Flavor.
-                        type: integer
-                      minCount:
-                        description: MinCount is the minimum requirable number of
-                          instances of the Flavor.
-                        type: integer
-                    required:
-                    - maxCount
-                    - minCount
-                    type: object
-                  partitionable:
-                    description: Partitionable contains the partitioning properties
-                      of the Flavor.
-                    properties:
-                      cpuMin:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: CpuMin is the minimum requirable number of CPU
-                          cores of the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      cpuStep:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: CpuStep is the incremental value of CPU cores
-                          of the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      memoryMin:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: MemoryMin is the minimum requirable amount of
-                          RAM of the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      memoryStep:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: MemoryStep is the incremental value of RAM of
-                          the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      podsMin:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: PodsMin is the minimum requirable number of pods
-                          of the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                      podsStep:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        description: PodsStep is the incremental value of pods of
-                          the Flavor.
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
-                    required:
-                    - cpuMin
-                    - cpuStep
-                    - memoryMin
-                    - memoryStep
-                    - podsMin
-                    - podsStep
-                    type: object
                 type: object
               price:
                 description: Price contains the price model of the Flavor.
@@ -260,18 +120,13 @@ spec:
                   ProviderID is the ID of the FLUIDOS Node ID that provides this Flavor.
                   It can correspond to ID of the owner FLUIDOS Node or to the ID of a FLUIDOS SuperNode that represents the entry point to a FLUIDOS Domain
                 type: string
-              type:
-                description: Type is the type of the Flavor. Currently, only K8S is
-                  supported.
-                type: string
             required:
-            - characteristics
-            - optionalFields
+            - availability
+            - location
+            - networkPropertyType
             - owner
-            - policy
             - price
             - providerID
-            - type
             type: object
           status:
             description: FlavorStatus defines the observed state of Flavor.

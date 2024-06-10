@@ -15,9 +15,12 @@
 package resourceforge
 
 import (
+	"encoding/json"
 	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 
 	advertisementv1alpha1 "github.com/fluidos-project/node/apis/advertisement/v1alpha1"
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
@@ -149,36 +152,50 @@ func ForgeContract(flavor *nodecorev1alpha1.Flavor, transaction *models.Transact
 
 // ForgeFlavorFromMetrics creates a new flavor custom resource from the metrics of the node.
 func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity) (flavor *nodecorev1alpha1.Flavor) {
+
+	k8SliceType := nodecorev1alpha1.K8Slice{
+		Characteristics: nodecorev1alpha1.Characteristics{
+			Cpu:     node.ResourceMetrics.CPUAvailable,
+			Memory:  node.ResourceMetrics.MemoryAvailable,
+			Pods:    node.ResourceMetrics.PodsAvailable,
+			Storage: node.ResourceMetrics.EphemeralStorage,
+			Gpu: &nodecorev1alpha1.GPU{
+				Model:  node.ResourceMetrics.GPU.Model,
+				Cores:  node.ResourceMetrics.GPU.CoresAvailable,
+				Memory: node.ResourceMetrics.GPU.MemoryAvailable,
+			},
+		},
+		Properties: nodecorev1alpha1.Properties{},
+		Policies: nodecorev1alpha1.Policies{
+			Partitionability: nodecorev1alpha1.Partitionability{
+				CpuMin:     parseutil.ParseQuantityFromString(flags.CPUMin),
+				MemoryMin:  parseutil.ParseQuantityFromString(flags.MemoryMin),
+				PodsMin:    parseutil.ParseQuantityFromString(flags.PodsMin),
+				CpuStep:    parseutil.ParseQuantityFromString(flags.CPUStep),
+				MemoryStep: parseutil.ParseQuantityFromString(flags.MemoryStep),
+				PodsStep:   parseutil.ParseQuantityFromString(flags.PodsStep),
+			},
+		},
+	}
+
+	// Serialize K8SliceType to JSON
+	k8SliceTypeJSON, err := json.Marshal(k8SliceType)
+	if err != nil {
+		klog.Errorf("Error when marshalling K8SliceType: %s", err)
+		return nil
+	}
+
 	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavorName(node.UID, "", ni.Domain),
+			Name:      namings.ForgeFlavorName("", ni.Domain),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID: ni.NodeID,
-			Type:       nodecorev1alpha1.K8S,
-			Characteristics: nodecorev1alpha1.Characteristics{
-				Architecture:      node.Architecture,
-				Cpu:               node.ResourceMetrics.CPUAvailable,
-				Memory:            node.ResourceMetrics.MemoryAvailable,
-				Pods:              node.ResourceMetrics.PodsAvailable,
-				EphemeralStorage:  node.ResourceMetrics.EphemeralStorage,
-				PersistentStorage: parseutil.ParseQuantityFromString("0"),
-				Gpu:               parseutil.ParseQuantityFromString("0"),
-			},
-			Policy: nodecorev1alpha1.Policy{
-				Partitionable: &nodecorev1alpha1.Partitionable{
-					CpuMin:     parseutil.ParseQuantityFromString(flags.CPUMin),
-					MemoryMin:  parseutil.ParseQuantityFromString(flags.MemoryMin),
-					PodsMin:    parseutil.ParseQuantityFromString(flags.PodsMin),
-					CpuStep:    parseutil.ParseQuantityFromString(flags.CPUStep),
-					MemoryStep: parseutil.ParseQuantityFromString(flags.MemoryStep),
-					PodsStep:   parseutil.ParseQuantityFromString(flags.PodsStep),
-				},
-				Aggregatable: &nodecorev1alpha1.Aggregatable{
-					MinCount: int(flags.MinCount),
-					MaxCount: int(flags.MaxCount),
-				},
+			Timestamp:  metav1.Time{Time: time.Now()},
+			Type: nodecorev1alpha1.FlavorType{
+				TypeIdentifier: nodecorev1alpha1.Type_K8Slice,
+				TypeData:       runtime.RawExtension{Raw: k8SliceTypeJSON},
 			},
 			Owner: ni,
 			Price: nodecorev1alpha1.Price{
@@ -186,33 +203,26 @@ func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdent
 				Currency: flags.CURRENCY,
 				Period:   flags.PERIOD,
 			},
-			OptionalFields: nodecorev1alpha1.OptionalFields{
-				Availability: true,
-				// This previously was the node UID that maybe is not the best choice to manage the scheduling
-				WorkerID: node.Name,
-			},
+			Availability: true,
 		},
 	}
 }
 
 // ForgeFlavorFromRef creates a new flavor starting from a Reference Flavor and the new Characteristics.
-func ForgeFlavorFromRef(f *nodecorev1alpha1.Flavor, char *nodecorev1alpha1.Characteristics) (flavor *nodecorev1alpha1.Flavor) {
+func ForgeFlavorFromRef(f *nodecorev1alpha1.Flavor, flavorType *nodecorev1alpha1.FlavorType) (flavor *nodecorev1alpha1.Flavor) {
 	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavorName(f.Spec.OptionalFields.WorkerID, string(f.Spec.Type), f.Spec.Owner.Domain),
+			Name:      namings.ForgeFlavorName(string(f.Spec.Type.TypeIdentifier), f.Spec.Owner.Domain),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
-			ProviderID:      f.Spec.ProviderID,
-			Type:            f.Spec.Type,
-			Characteristics: *char,
-			Policy:          f.Spec.Policy,
-			Owner:           f.Spec.Owner,
-			Price:           f.Spec.Price,
-			OptionalFields: nodecorev1alpha1.OptionalFields{
-				Availability: true,
-				WorkerID:     f.Spec.OptionalFields.WorkerID,
-			},
+			ProviderID:          f.Spec.ProviderID,
+			Type:                *flavorType,
+			Owner:               f.Spec.Owner,
+			Price:               f.Spec.Price,
+			Availability:        true,
+			NetworkPropertyType: f.Spec.NetworkPropertyType,
+			Location:            f.Spec.Location,
 		},
 	}
 }
@@ -353,6 +363,56 @@ func ForgeTransactionFromObj(transaction *models.Transaction) *reservationv1alph
 
 // ForgeFlavorFromObj creates a Flavor CR from a Flavor Object (REAR).
 func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
+
+	var flavorType nodecorev1alpha1.FlavorType
+
+	switch flavor.Type.GetFlavorTypeName() {
+	case models.K8SliceNameDefault:
+		flavorTypeData := nodecorev1alpha1.K8Slice{
+			Characteristics: nodecorev1alpha1.Characteristics{
+				Cpu:     flavor.Type.(models.K8Slice).Characteristics.Cpu,
+				Memory:  flavor.Type.(models.K8Slice).Characteristics.Memory,
+				Pods:    flavor.Type.(models.K8Slice).Characteristics.Pods,
+				Storage: flavor.Type.(models.K8Slice).Characteristics.Storage,
+				Gpu: &nodecorev1alpha1.GPU{
+					Model:  flavor.Type.(models.K8Slice).Characteristics.Gpu.Model,
+					Cores:  flavor.Type.(models.K8Slice).Characteristics.Gpu.Cores,
+					Memory: flavor.Type.(models.K8Slice).Characteristics.Gpu.Memory,
+				},
+			},
+			Properties: nodecorev1alpha1.Properties{
+				Latency:           flavor.Type.(models.K8Slice).Properties.Latency,
+				SecurityStandards: flavor.Type.(models.K8Slice).Properties.SecurityStandards,
+				CarbonFootprint: &nodecorev1alpha1.CarbonFootprint{
+					Embodied:    flavor.Type.(models.K8Slice).Properties.CarbonFootprint.Embodied,
+					Operational: flavor.Type.(models.K8Slice).Properties.CarbonFootprint.Operational,
+				},
+			},
+			Policies: nodecorev1alpha1.Policies{
+				Partitionability: nodecorev1alpha1.Partitionability{
+					CpuMin:     flavor.Type.(models.K8Slice).Policies.Partitionability.CpuMin,
+					MemoryMin:  flavor.Type.(models.K8Slice).Policies.Partitionability.MemoryMin,
+					PodsMin:    flavor.Type.(models.K8Slice).Policies.Partitionability.PodsMin,
+					CpuStep:    flavor.Type.(models.K8Slice).Policies.Partitionability.CpuStep,
+					MemoryStep: flavor.Type.(models.K8Slice).Policies.Partitionability.MemoryStep,
+					PodsStep:   flavor.Type.(models.K8Slice).Policies.Partitionability.PodsStep,
+				},
+			},
+		}
+		flavorTypeDataJSON, err := json.Marshal(flavorTypeData)
+		if err != nil {
+			klog.Errorf("Error when marshalling K8SliceType: %s", err)
+			return nil
+		}
+		flavorType = nodecorev1alpha1.FlavorType{
+			TypeIdentifier: nodecorev1alpha1.Type_K8Slice,
+			TypeData:       runtime.RawExtension{Raw: flavorTypeDataJSON},
+		}
+
+	default:
+		klog.Errorf("Flavor type not recognized")
+		return nil
+	}
 	f := &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      flavor.FlavorID,
@@ -360,39 +420,8 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID: flavor.Owner.NodeID,
-			Type:       nodecorev1alpha1.K8S,
-			Characteristics: nodecorev1alpha1.Characteristics{
-				Cpu:               flavor.Characteristics.CPU,
-				Memory:            flavor.Characteristics.Memory,
-				Pods:              flavor.Characteristics.Pods,
-				Architecture:      flavor.Characteristics.Architecture,
-				EphemeralStorage:  flavor.Characteristics.EphemeralStorage,
-				PersistentStorage: flavor.Characteristics.PersistentStorage,
-				Gpu:               flavor.Characteristics.Gpu,
-			},
-			Policy: nodecorev1alpha1.Policy{
-				// Check if flavor.Partitionable is not nil before setting Partitionable
-				Partitionable: func() *nodecorev1alpha1.Partitionable {
-					if flavor.Policy.Partitionable != nil {
-						return &nodecorev1alpha1.Partitionable{
-							CpuMin:     flavor.Policy.Partitionable.CPUMinimum,
-							MemoryMin:  flavor.Policy.Partitionable.MemoryMinimum,
-							CpuStep:    flavor.Policy.Partitionable.CPUStep,
-							MemoryStep: flavor.Policy.Partitionable.MemoryStep,
-						}
-					}
-					return nil
-				}(),
-				Aggregatable: func() *nodecorev1alpha1.Aggregatable {
-					if flavor.Policy.Aggregatable != nil {
-						return &nodecorev1alpha1.Aggregatable{
-							MinCount: flavor.Policy.Aggregatable.MinCount,
-							MaxCount: flavor.Policy.Aggregatable.MaxCount,
-						}
-					}
-					return nil
-				}(),
-			},
+			Type:       flavorType,
+			Timestamp:  metav1.Time{Time: flavor.Timestamp},
 			Owner: nodecorev1alpha1.NodeIdentity{
 				Domain: flavor.Owner.Domain,
 				IP:     flavor.Owner.IP,
@@ -403,9 +432,14 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 				Currency: flavor.Price.Currency,
 				Period:   flavor.Price.Period,
 			},
-			OptionalFields: nodecorev1alpha1.OptionalFields{
-				Availability: flavor.OptionalFields.Availability,
-				WorkerID:     flavor.OptionalFields.WorkerID,
+			Availability:        flavor.Availability,
+			NetworkPropertyType: flavor.NetworkPropertyType,
+			Location: &nodecorev1alpha1.Location{
+				Latitude:        flavor.Location.Latitude,
+				Longitude:       flavor.Location.Longitude,
+				Country:         flavor.Location.Country,
+				City:            flavor.Location.City,
+				AdditionalNotes: flavor.Location.AdditionalNotes,
 			},
 		},
 	}
@@ -415,13 +449,15 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 // ForgePartition creates a Partition from a FlavorSelector.
 func ForgePartition(selector *nodecorev1alpha1.FlavorSelector) *nodecorev1alpha1.Partition {
 	return &nodecorev1alpha1.Partition{
-		Architecture:     selector.Architecture,
-		CPU:              selector.RangeSelector.MinCpu,
-		Memory:           selector.RangeSelector.MinMemory,
-		Pods:             selector.RangeSelector.MinPods,
-		EphemeralStorage: selector.RangeSelector.MinEph,
-		Storage:          selector.RangeSelector.MinStorage,
-		Gpu:              selector.RangeSelector.MinGpu,
+		CPU:     selector.RangeSelector.MinCpu,
+		Memory:  selector.RangeSelector.MinMemory,
+		Pods:    selector.RangeSelector.MinPods,
+		Storage: selector.RangeSelector.MinStorage,
+		Gpu: &nodecorev1alpha1.GPU{
+			Model:  selector.RangeSelector.MinGpu.Model,
+			Cores:  selector.RangeSelector.MinGpu.Cores,
+			Memory: selector.RangeSelector.MinGpu.Memory,
+		},
 	}
 }
 

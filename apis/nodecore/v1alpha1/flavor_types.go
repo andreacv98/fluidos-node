@@ -17,45 +17,22 @@ package v1alpha1
 import (
 	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 const (
-	K8S FlavorType = "k8s-fluidos"
+	Type_K8Slice FlavorTypeIdentifier = "K8Slice"
+	Type_VM      FlavorTypeIdentifier = "VM"
+	Type_Service FlavorTypeIdentifier = "Service"
 )
 
-type FlavorType string
+type FlavorTypeIdentifier string
 
-type Characteristics struct {
-
-	// Architecture is the architecture of the Flavor.
-	Architecture string `json:"architecture"`
-
-	// CPU is the number of CPU cores of the Flavor.
-	Cpu resource.Quantity `json:"cpu"`
-
-	// Memory is the amount of RAM of the Flavor.
-	Memory resource.Quantity `json:"memory"`
-
-	// Pods is the maximum number of pods of the Flavor.
-	Pods resource.Quantity `json:"pods"`
-
-	// GPU is the number of GPU cores of the Flavor.
-	Gpu resource.Quantity `json:"gpu,omitempty"`
-
-	// EphemeralStorage is the amount of ephemeral storage of the Flavor.
-	EphemeralStorage resource.Quantity `json:"ephemeral-storage,omitempty"`
-
-	// PersistentStorage is the amount of persistent storage of the Flavor.
-	PersistentStorage resource.Quantity `json:"persistent-storage,omitempty"`
-}
-
-type Policy struct {
-
-	// Partitionable contains the partitioning properties of the Flavor.
-	Partitionable *Partitionable `json:"partitionable,omitempty"`
-
-	// Aggregatable contains the aggregation properties of the Flavor.
-	Aggregatable *Aggregatable `json:"aggregatable,omitempty"`
+type FlavorType struct {
+	// Type of the Flavor.
+	TypeIdentifier FlavorTypeIdentifier `json:"typeIdentifier"`
+	// Raw is the raw value of the Flavor.
+	TypeData runtime.RawExtension `json:"typeData"`
 }
 
 // Partitionable represents the partitioning properties of a Flavor, such as the minimum and incremental values of CPU and RAM.
@@ -79,17 +56,7 @@ type Partitionable struct {
 	PodsStep resource.Quantity `json:"podsStep"`
 }
 
-// Aggregatable represents the aggregation properties of a Flavor, such as the minimum instance count.
-type Aggregatable struct {
-	// MinCount is the minimum requirable number of instances of the Flavor.
-	MinCount int `json:"minCount"`
-
-	// MaxCount is the maximum requirable number of instances of the Flavor.
-	MaxCount int `json:"maxCount"`
-}
-
 type Price struct {
-
 	// Amount is the amount of the price.
 	Amount string `json:"amount"`
 
@@ -100,14 +67,22 @@ type Price struct {
 	Period string `json:"period"`
 }
 
-type OptionalFields struct {
+// Location represents the location of a Flavor.
+type Location struct {
+	// Latitude is the latitude of the location.
+	Latitude string `json:"latitude,omitempty"`
 
-	// Availability is the availability flag of the Flavor.
-	// It is a field inherited from the REAR Protocol specifications.
-	Availability bool `json:"availability,omitempty"`
+	// Longitude is the longitude of the location.
+	Longitude string `json:"longitude,omitempty"`
 
-	// WorkerID is the ID of the worker that provides the Flavor.
-	WorkerID string `json:"workerID,omitempty"`
+	// Country is the country of the location.
+	Country string `json:"country,omitempty"`
+
+	// City is the city of the location.
+	City string `json:"city,omitempty"`
+
+	// AdditionalNotes are additional notes of the location.
+	AdditionalNotes string `json:"additionalNotes,omitempty"`
 }
 
 // FlavorSpec defines the desired state of Flavor
@@ -118,15 +93,11 @@ type FlavorSpec struct {
 	// It can correspond to ID of the owner FLUIDOS Node or to the ID of a FLUIDOS SuperNode that represents the entry point to a FLUIDOS Domain
 	ProviderID string `json:"providerID"`
 
-	// Type is the type of the Flavor. Currently, only K8S is supported.
+	// Type is the type of the Flavor.
 	Type FlavorType `json:"type"`
 
-	// Characteristics contains the characteristics of the Flavor.
-	// They are based on the type of the Flavor and can change depending on it. In this case, the type is K8S so the characteristics are CPU, Memory, GPU and EphemeralStorage.
-	Characteristics Characteristics `json:"characteristics"`
-
-	// Policy contains the policy of the Flavor. The policy describes the partitioning and aggregation properties of the Flavor.
-	Policy Policy `json:"policy"`
+	// Timestamp is the timestamp of the Flavor.
+	Timestamp metav1.Time `json:"timestamp"`
 
 	// Owner contains the identity info of the owner of the Flavor. It can be unknown if the Flavor is provided by a reseller or a third party.
 	Owner NodeIdentity `json:"owner"`
@@ -134,9 +105,14 @@ type FlavorSpec struct {
 	// Price contains the price model of the Flavor.
 	Price Price `json:"price"`
 
-	// This field is used to specify the optional fields that can be retrieved from the Flavor.
-	// In the future it will be expanded to include more optional fields defined in the REAR Protocol or custom ones.
-	OptionalFields OptionalFields `json:"optionalFields"`
+	// Availability is the availability flag of the Flavor.
+	Availability bool `json:"availability"`
+
+	// NetworkPropertyType is the network property type of the Flavor.
+	NetworkPropertyType string `json:"networkPropertyType,omitempty"`
+
+	// Location is the location of the Flavor.
+	Location *Location `json:"location,omitempty"`
 }
 
 // FlavorStatus defines the observed state of Flavor.
@@ -164,6 +140,7 @@ type FlavorStatus struct {
 // +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=`.spec.optionalFields.availability`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // Flavor is the Schema for the flavors API.
+// +kubebuilder:resource:shortName=fl
 type Flavor struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`

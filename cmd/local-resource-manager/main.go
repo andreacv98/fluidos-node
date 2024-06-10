@@ -26,6 +26,7 @@ import (
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
 	localresourcemanager "github.com/fluidos-project/node/pkg/local-resource-manager"
@@ -45,7 +46,10 @@ func init() {
 }
 
 func main() {
+	var metricsAddr string
+	var enableLeaderElection bool
 	var probeAddr string
+	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":8081", "The address the probe endpoint binds to.")
 	flag.StringVar(&flags.AMOUNT, "amount", "", "Amount of money set for the flavours of this node")
 	flag.StringVar(&flags.CURRENCY, "currency", "", "Currency of the money set for the flavours of this node")
@@ -61,13 +65,38 @@ func main() {
 	flag.Int64Var(&flags.MaxCount, "max-count", 0, "Maximum number of flavours")
 	flag.StringVar(&flags.ResourceNodeLabel, "node-resource-label", "node-role.fluidos.eu/resources",
 		"Label used to filter the k8s nodes from which create flavours")
-
+	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+		"Enable leader election for controller manager. "+
+			"Enabling this will ensure there is only one active controller manager.")
+	opts := zap.Options{
+		Development: true,
+	}
+	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
 	cfg := ctrl.GetConfigOrDie()
 	cl, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
 		setupLog.Error(err, "Unable to create client")
+		os.Exit(1)
+	}
+
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		Port:                   9443,
+		HealthProbeBindAddress: probeAddr,
+		LeaderElection:         enableLeaderElection,
+		LeaderElectionID:       "c7b7b7b7.fluidos.eu",
+	})
+	if err != nil {
+		setupLog.Error(err, "unable to start manager")
+		os.Exit(1)
+	}
+
+	// Register Flavor webhook
+	if err = (&nodecorev1alpha1.Flavor{}).SetupWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
 		os.Exit(1)
 	}
 

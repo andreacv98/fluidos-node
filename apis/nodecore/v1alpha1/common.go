@@ -45,17 +45,16 @@ type NodeIdentity struct {
 	Domain string `json:"domain"`
 	NodeID string `json:"nodeID"`
 	IP     string `json:"ip"`
+	LiqoID string `json:"liqoID,omitempty"`
 }
 
 // Partition is the partition of the flavor.
 type Partition struct {
-	Architecture     string            `json:"architecture"`
-	CPU              resource.Quantity `json:"cpu"`
-	Memory           resource.Quantity `json:"memory"`
-	Pods             resource.Quantity `json:"pods"`
-	Gpu              resource.Quantity `json:"gpu,omitempty"`
-	EphemeralStorage resource.Quantity `json:"ephemeral-storage,omitempty"`
-	Storage          resource.Quantity `json:"storage,omitempty"`
+	CPU     resource.Quantity `json:"cpu"`
+	Memory  resource.Quantity `json:"memory"`
+	Pods    resource.Quantity `json:"pods"`
+	Gpu     *GPU              `json:"gpu,omitempty"`
+	Storage resource.Quantity `json:"storage,omitempty"`
 }
 
 // LiqoCredentials contains the credentials of a Liqo cluster to enstablish a peering.

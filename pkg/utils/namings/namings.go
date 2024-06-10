@@ -55,7 +55,7 @@ func ForgeReservationName(solverID string) string {
 }
 
 // ForgeFlavorName returns the name of the flavor following the pattern Domain-resourceType-rand(4).
-func ForgeFlavorName(workerID, resourceType, domain string) string {
+func ForgeFlavorName(resourceType, domain string) string {
 	var resType string
 	if resourceType == "" {
 		resType = flags.ResourceType
@@ -67,7 +67,7 @@ func ForgeFlavorName(workerID, resourceType, domain string) string {
 		klog.Errorf("Error when generating random string: %s", err)
 	}
 
-	return domain + "-" + resType + "-" + ForgeHashString(workerID+r, 8)
+	return domain + "-" + resType + "-" + ForgeHashString(r, 8)
 }
 
 // ForgeDiscoveryName returns the name of the discovery following the pattern solverID-discovery.

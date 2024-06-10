@@ -14,17 +14,18 @@
 
 package models
 
-import "k8s.io/apimachinery/pkg/api/resource"
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
 
 // Partition represents the partitioning properties of a Flavor.
 type Partition struct {
-	Architecture     string            `json:"architecture"`
-	CPU              resource.Quantity `json:"cpu"`
-	Memory           resource.Quantity `json:"memory"`
-	Pods             resource.Quantity `json:"pods"`
-	EphemeralStorage resource.Quantity `json:"ephemeral-storage,omitempty"`
-	Gpu              resource.Quantity `json:"gpu,omitempty"`
-	Storage          resource.Quantity `json:"storage,omitempty"`
+	CPU              resource.Quantity  `json:"cpu"`
+	Memory           resource.Quantity  `json:"memory"`
+	Pods             resource.Quantity  `json:"pods"`
+	EphemeralStorage resource.Quantity  `json:"ephemeral-storage,omitempty"`
+	Gpu              GpuCharacteristics `json:"gpu,omitempty"`
+	Storage          resource.Quantity  `json:"storage,omitempty"`
 }
 
 // Transaction contains information regarding the transaction for a flavor.

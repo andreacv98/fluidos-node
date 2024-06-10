@@ -39,12 +39,11 @@ type FlavorSelector struct {
 
 // MatchSelector represents the criteria for selecting Flavors through a strict match.
 type MatchSelector struct {
-	CPU              resource.Quantity `json:"cpu,omitempty"`
-	Memory           resource.Quantity `json:"memory,omitempty"`
-	Pods             resource.Quantity `json:"pods,omitempty"`
-	Storage          resource.Quantity `json:"storage,omitempty"`
-	EphemeralStorage resource.Quantity `json:"ephemeralStorage,omitempty"`
-	Gpu              resource.Quantity `json:"gpu,omitempty"`
+	CPU     resource.Quantity `json:"cpu,omitempty"`
+	Memory  resource.Quantity `json:"memory,omitempty"`
+	Pods    resource.Quantity `json:"pods,omitempty"`
+	Storage resource.Quantity `json:"storage,omitempty"`
+	Gpu     *GPU              `json:"gpu,omitempty"`
 }
 
 // RangeSelector represents the criteria for selecting Flavors through a range.
@@ -52,15 +51,13 @@ type RangeSelector struct {
 	MinCpu     resource.Quantity `json:"minCpu,omitempty"`
 	MinMemory  resource.Quantity `json:"minMemory,omitempty"`
 	MinPods    resource.Quantity `json:"minPods,omitempty"`
-	MinEph     resource.Quantity `json:"minEph,omitempty"`
 	MinStorage resource.Quantity `json:"minStorage,omitempty"`
-	MinGpu     resource.Quantity `json:"minGpu,omitempty"`
+	MinGpu     *GPU              `json:"minGpu,omitempty"`
 	MaxCpu     resource.Quantity `json:"MaxCpu,omitempty"`
 	MaxMemory  resource.Quantity `json:"MaxMemory,omitempty"`
 	MaxPods    resource.Quantity `json:"MaxPods,omitempty"`
-	MaxEph     resource.Quantity `json:"MaxEph,omitempty"`
 	MaxStorage resource.Quantity `json:"MaxStorage,omitempty"`
-	MaxGpu     resource.Quantity `json:"MaxGpu,omitempty"`
+	MaxGpu     *GPU              `json:"MaxGpu,omitempty"`
 }
 
 // SolverSpec defines the desired state of Solver

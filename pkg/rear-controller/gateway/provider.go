@@ -57,7 +57,7 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 
 	// Filtering only the available flavors
 	for i := range flavors {
-		if !flavors[i].Spec.OptionalFields.Availability {
+		if !flavors[i].Spec.Availability {
 			availableFlavors = append(availableFlavors, flavors[i])
 		}
 	}
@@ -75,10 +75,14 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 	max := resource.MustParse("0")
 	index := 0
 	for i := range availableFlavors {
-		if availableFlavors[i].Spec.Characteristics.Cpu.Cmp(max) == 1 {
-			max = availableFlavors[i].Spec.Characteristics.Cpu
-			index = i
+		err, flavorTypeIdentifier, flavorTypeData := parseutil.ParseFlavorType(&availableFlavors[i])
+		if flavorTypeIdentifier == nodecorev1alpha1.Type_K8Slice {
+			if flavorTypeData.(nodecorev1alpha1.K8Slice).Characteristics.Cpu.Cmp(max) == 1 {
+				max = availableFlavors[i].Spec.Characteristics.Cpu
+				index = i
+			}
 		}
+		
 	}
 
 	selected := *flavors[index].DeepCopy()
