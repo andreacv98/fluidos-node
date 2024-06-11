@@ -17,7 +17,6 @@ package main
 import (
 	"context"
 	"flag"
-	"net/http"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
@@ -26,8 +25,11 @@ import (
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
+
+	//"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
 	localresourcemanager "github.com/fluidos-project/node/pkg/local-resource-manager"
@@ -75,6 +77,8 @@ func main() {
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
 
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
 	cfg := ctrl.GetConfigOrDie()
 	cl, err := client.New(cfg, client.Options{Scheme: scheme})
 	if err != nil {
@@ -83,8 +87,8 @@ func main() {
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:                 scheme,
-		MetricsBindAddress:     metricsAddr,
+		Scheme:             scheme,
+		MetricsBindAddress: metricsAddr,
 		WebhookServer: 			webhook.NewServer(webhook.Options{Port: 9443}),
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
@@ -94,6 +98,9 @@ func main() {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
 	}
+
+	// Print something abou the mgr
+	setupLog.Info("Manager started", "manager", mgr)
 
 	// Register Flavor webhook
 	if err = (&nodecorev1alpha1.Flavor{}).SetupWebhookWithManager(mgr); err != nil {
@@ -107,24 +114,19 @@ func main() {
 		os.Exit(1)
 	}
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/healthz", healthHandler) // health check endpoint
-	mux.HandleFunc("/readyz", healthHandler)  // readiness check endpoint
-
-	//nolint:gosec // We don't need this kind of security check
-	server := &http.Server{
-		Addr:    probeAddr,
-		Handler: mux,
-	}
-
-	setupLog.Info("Starting server", "address", probeAddr)
-	if err := server.ListenAndServe(); err != http.ErrServerClosed {
-		setupLog.Error(err, "Server stopped unexpectedly")
+	// Register health checks
+	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
-}
+	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
+		setupLog.Error(err, "unable to set up ready check")
+		os.Exit(1)
+	}
 
-func healthHandler(w http.ResponseWriter, _ *http.Request) {
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte("OK"))
+	setupLog.Info("Starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
 }

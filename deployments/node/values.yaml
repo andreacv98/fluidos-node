@@ -150,4 +150,7 @@ networkManager:
 
 webhook:
   issuer: "self-signed"
+  deployment:
+    # -- The mount path for the webhook certificates.
+    certsMount: "/tmp/k8s-webhook-server/serving-certs/"
   

@@ -59,11 +59,11 @@ func Start(ctx context.Context, cl client.Client) error {
 	// For each node create a Flavor
 	for i := range nodes {
 		flavor := resourceforge.ForgeFlavorFromMetrics(&nodes[i], *nodeIdentity)
-		err := cl.Create(ctx, flavor)
+		/*err := cl.Create(ctx, flavor)
 		if err != nil {
 			log.Printf("Error creating Flavor: %v", err)
 			return err
-		}
+		}*/
 		klog.Infof("Flavor created: %s", flavor.Name)
 	}
 
