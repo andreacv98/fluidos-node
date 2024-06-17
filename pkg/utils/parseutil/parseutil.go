@@ -165,7 +165,7 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 		Type:                modelFlavorType,
 		ProviderID:          flavor.Spec.ProviderID,
 		NetworkPropertyType: flavor.Spec.NetworkPropertyType,
-		Timestamp:           flavor.Spec.Timestamp.Time,
+		Timestamp:           flavor.CreationTimestamp.Time,
 		Location: models.Location{
 			Latitude:        flavor.Spec.Location.Latitude,
 			Longitude:       flavor.Spec.Location.Longitude,
@@ -225,23 +225,23 @@ func ParseFlavorType(flavor *nodecorev1alpha1.Flavor) (error, nodecorev1alpha1.F
 
 	var validationErr error
 
-	switch flavor.Spec.Type.TypeIdentifier {
+	switch flavor.Spec.FlavorType.TypeIdentifier {
 
 	case nodecorev1alpha1.Type_K8Slice:
 
 		var k8slice nodecorev1alpha1.K8Slice
-		validationErr = json.Unmarshal(flavor.Spec.Type.TypeData.Raw, &k8slice)
+		validationErr = json.Unmarshal(flavor.Spec.FlavorType.TypeData.Raw, &k8slice)
 		return validationErr, nodecorev1alpha1.Type_K8Slice, k8slice
 
 	case nodecorev1alpha1.Type_VM:
 		// TODO: Implement VM flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.Type.TypeIdentifier), "", nil
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
 
 	case nodecorev1alpha1.Type_Service:
 		// TODO: Implement Service flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.Type.TypeIdentifier), "", nil
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
 
 	default:
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.Type.TypeIdentifier), "", nil
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
 	}
 }

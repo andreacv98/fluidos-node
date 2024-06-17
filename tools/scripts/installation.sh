@@ -76,7 +76,7 @@ function install_components() {
     local_repositories=$3
 
     # Get the local resource manager installation boolean from parameters
-    local_resource_manager=$4
+    enable_auto_discovery=$4
 
     helm repo add fluidos https://fluidos-project.github.io/node/
 
@@ -174,10 +174,16 @@ function install_components() {
         echo "The KUBECONFIG is $KUBECONFIG"
 
         # Apply the metrics-server
-        kubectl apply -f "$SCRIPT_DIR"/../../quickstart/utils/metrics-server.yaml --kubeconfig "$KUBECONFIG"
+        #kubectl apply -f "$SCRIPT_DIR"/../../quickstart/utils/metrics-server.yaml --kubeconfig "$KUBECONFIG"
+        #kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml --kubeconfig "$KUBECONFIG"
+        helm repo add metrics-server https://kubernetes-sigs.github.io/metrics-server/
+        helm repo update
+        helm install metrics-server metrics-server/metrics-server --kubeconfig "$KUBECONFIG" -n kube-system --set defaultArgs='{--kubelet-insecure-tls,--kubelet-preferred-address-types=InternalIP\,ExternalIP\,Hostname,--cert-dir=/tmp,--kubelet-use-node-status-port}'
+
+
 
         # Wait for the metrics-server to be ready
-        echo "Waiting for metrics-server to be ready"
+        #echo "Waiting for metrics-server to be ready"
         kubectl wait --for=condition=ready pod -l k8s-app=metrics-server -n kube-system --timeout=300s --kubeconfig "$KUBECONFIG"
 
         # Install the cert-manager Helm chart
@@ -189,10 +195,10 @@ function install_components() {
         # Decide value file to use based on the role of the cluster
         if [ "$(jq -r '.role' <<< "${clusters[$cluster]}")" == "consumer" ]; then
             # Check if local resouce manager is enabled
-            if [ "$local_resource_manager" == "true" ]; then
+            if [ "$enable_auto_discovery" == "true" ]; then
                 value_file="$SCRIPT_DIR/../../quickstart/utils/consumer-values.yaml"
             else
-                value_file="$SCRIPT_DIR/../../quickstart/utils/consumer-values-nolrm.yaml"
+                value_file="$SCRIPT_DIR/../../quickstart/utils/consumer-values-no-ad.yaml"
             fi
             # Get cluster IP and port
             ip_value="${clusters[$cluster]}"
@@ -200,10 +206,10 @@ function install_components() {
             port=$consumer_node_port
         else
             # Check if local resouce manager is enabled
-            if [ "$local_resource_manager" == "true" ]; then
+            if [ "$enable_auto_discovery" == "true" ]; then
                 value_file="$SCRIPT_DIR/../../quickstart/utils/provider-values.yaml"
             else
-                value_file="$SCRIPT_DIR/../../quickstart/utils/provider-values-nolrm.yaml"
+                value_file="$SCRIPT_DIR/../../quickstart/utils/provider-values-no-ad.yaml"
             fi
             # Get cluster IP and port
             ip_value="${clusters[$cluster]}"

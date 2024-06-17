@@ -75,18 +75,32 @@ spec:
                         - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      ephemeralStorage:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
                       gpu:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
+                        description: GPU represents the GPU characteristics of a K8Slice
+                          Flavor.
+                        properties:
+                          cores:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Number of GPU cores
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          memory:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Memory of the GPU
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          model:
+                            description: Model of the GPU
+                            type: string
+                        required:
+                        - cores
+                        - memory
+                        - model
+                        type: object
                       memory:
                         anyOf:
                         - type: integer
@@ -116,18 +130,32 @@ spec:
                         - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      MaxEph:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
                       MaxGpu:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
+                        description: GPU represents the GPU characteristics of a K8Slice
+                          Flavor.
+                        properties:
+                          cores:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Number of GPU cores
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          memory:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Memory of the GPU
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          model:
+                            description: Model of the GPU
+                            type: string
+                        required:
+                        - cores
+                        - memory
+                        - model
+                        type: object
                       MaxMemory:
                         anyOf:
                         - type: integer
@@ -152,18 +180,32 @@ spec:
                         - type: string
                         pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
                         x-kubernetes-int-or-string: true
-                      minEph:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
                       minGpu:
-                        anyOf:
-                        - type: integer
-                        - type: string
-                        pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
-                        x-kubernetes-int-or-string: true
+                        description: GPU represents the GPU characteristics of a K8Slice
+                          Flavor.
+                        properties:
+                          cores:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Number of GPU cores
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          memory:
+                            anyOf:
+                            - type: integer
+                            - type: string
+                            description: Memory of the GPU
+                            pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                            x-kubernetes-int-or-string: true
+                          model:
+                            description: Model of the GPU
+                            type: string
+                        required:
+                        - cores
+                        - memory
+                        - model
+                        type: object
                       minMemory:
                         anyOf:
                         - type: integer
@@ -308,10 +350,45 @@ spec:
                                       description: Availability is the availability
                                         flag of the Flavor.
                                       type: boolean
+                                    flavorType:
+                                      description: FlavorType is the type of the Flavor.
+                                      properties:
+                                        typeData:
+                                          description: Raw is the raw value of the
+                                            Flavor.
+                                          type: object
+                                          x-kubernetes-preserve-unknown-fields: true
+                                        typeIdentifier:
+                                          description: Type of the Flavor.
+                                          type: string
+                                      required:
+                                      - typeData
+                                      - typeIdentifier
+                                      type: object
                                     location:
                                       description: Location is the location of the
                                         Flavor.
-                                      type: string
+                                      properties:
+                                        additionalNotes:
+                                          description: AdditionalNotes are additional
+                                            notes of the location.
+                                          type: string
+                                        city:
+                                          description: City is the city of the location.
+                                          type: string
+                                        country:
+                                          description: Country is the country of the
+                                            location.
+                                          type: string
+                                        latitude:
+                                          description: Latitude is the latitude of
+                                            the location.
+                                          type: string
+                                        longitude:
+                                          description: Longitude is the longitude
+                                            of the location.
+                                          type: string
+                                      type: object
                                     networkPropertyType:
                                       description: NetworkPropertyType is the network
                                         property type of the Flavor.
@@ -363,8 +440,7 @@ spec:
                                       type: string
                                   required:
                                   - availability
-                                  - location
-                                  - networkPropertyType
+                                  - flavorType
                                   - owner
                                   - price
                                   - providerID

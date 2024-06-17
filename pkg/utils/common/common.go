@@ -34,7 +34,7 @@ func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector *models
 	// Get the Flavors that match the selector
 	for i := range flavors {
 		f := flavors[i]
-		if string(f.Spec.Type.TypeIdentifier) == selector.FlavorType {
+		if string(f.Spec.FlavorType.TypeIdentifier) == selector.FlavorType {
 			if FilterFlavor(selector, &f) {
 				flavorsSelected = append(flavorsSelected, f)
 			}
@@ -58,7 +58,7 @@ func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
 		return FilterFlavorK8Slice(selector, flavorTypeData.(*nodecorev1alpha1.K8Slice))
 	default:
 		// Flavor type not supported
-		klog.Errorf("flavor type %s not supported", f.Spec.Type.TypeIdentifier)
+		klog.Errorf("flavor type %s not supported", f.Spec.FlavorType.TypeIdentifier)
 		return false
 	}
 }

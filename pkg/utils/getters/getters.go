@@ -31,7 +31,7 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/flags"
 )
 
-// GetNodeIdentity retrieves the list of local providers ip addresses from the Network Manager configMap.
+// GetNodeIdentity retrieves the node identity from the local cluster.
 func GetNodeIdentity(ctx context.Context, cl client.Client) *nodecorev1alpha1.NodeIdentity {
 	cm := &corev1.ConfigMap{}
 

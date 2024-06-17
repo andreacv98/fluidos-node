@@ -151,7 +151,7 @@ func ForgeContract(flavor *nodecorev1alpha1.Flavor, transaction *models.Transact
 }
 
 // ForgeFlavorFromMetrics creates a new flavor custom resource from the metrics of the node.
-func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity) (flavor *nodecorev1alpha1.Flavor) {
+func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdentity, ownerReferences []metav1.OwnerReference) (flavor *nodecorev1alpha1.Flavor) {
 
 	k8SliceType := nodecorev1alpha1.K8Slice{
 		Characteristics: nodecorev1alpha1.K8SliceCharacteristics{
@@ -187,13 +187,13 @@ func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdent
 
 	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavorName("", ni.Domain),
-			Namespace: flags.FluidoNamespace,
+			Name:            namings.ForgeFlavorName("", ni.Domain),
+			Namespace:       flags.FluidoNamespace,
+			OwnerReferences: ownerReferences,
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID: ni.NodeID,
-			Timestamp:  metav1.Time{Time: time.Now()},
-			Type: nodecorev1alpha1.FlavorType{
+			FlavorType: nodecorev1alpha1.FlavorType{
 				TypeIdentifier: nodecorev1alpha1.Type_K8Slice,
 				TypeData:       runtime.RawExtension{Raw: k8SliceTypeJSON},
 			},
@@ -204,6 +204,15 @@ func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdent
 				Period:   flags.PERIOD,
 			},
 			Availability: true,
+			// TODO: test without network property and location
+			NetworkPropertyType: "networkProperty",
+			Location: &nodecorev1alpha1.Location{
+				Latitude:        "10",
+				Longitude:       "58",
+				Country:         "Italy",
+				City:            "Turin",
+				AdditionalNotes: "None",
+			},
 		},
 	}
 }
@@ -212,12 +221,12 @@ func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdent
 func ForgeFlavorFromRef(f *nodecorev1alpha1.Flavor, flavorType *nodecorev1alpha1.FlavorType) (flavor *nodecorev1alpha1.Flavor) {
 	return &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      namings.ForgeFlavorName(string(f.Spec.Type.TypeIdentifier), f.Spec.Owner.Domain),
+			Name:      namings.ForgeFlavorName(string(f.Spec.FlavorType.TypeIdentifier), f.Spec.Owner.Domain),
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID:          f.Spec.ProviderID,
-			Type:                *flavorType,
+			FlavorType:          *flavorType,
 			Owner:               f.Spec.Owner,
 			Price:               f.Spec.Price,
 			Availability:        true,
@@ -420,8 +429,7 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 		},
 		Spec: nodecorev1alpha1.FlavorSpec{
 			ProviderID: flavor.Owner.NodeID,
-			Type:       flavorType,
-			Timestamp:  metav1.Time{Time: flavor.Timestamp},
+			FlavorType: flavorType,
 			Owner: nodecorev1alpha1.NodeIdentity{
 				Domain: flavor.Owner.Domain,
 				IP:     flavor.Owner.IP,

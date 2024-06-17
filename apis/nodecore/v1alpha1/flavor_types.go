@@ -15,7 +15,6 @@
 package v1alpha1
 
 import (
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -33,27 +32,6 @@ type FlavorType struct {
 	TypeIdentifier FlavorTypeIdentifier `json:"typeIdentifier"`
 	// Raw is the raw value of the Flavor.
 	TypeData runtime.RawExtension `json:"typeData"`
-}
-
-// Partitionable represents the partitioning properties of a Flavor, such as the minimum and incremental values of CPU and RAM.
-type Partitionable struct {
-	// CpuMin is the minimum requirable number of CPU cores of the Flavor.
-	CpuMin resource.Quantity `json:"cpuMin"`
-
-	// MemoryMin is the minimum requirable amount of RAM of the Flavor.
-	MemoryMin resource.Quantity `json:"memoryMin"`
-
-	// PodsMin is the minimum requirable number of pods of the Flavor.
-	PodsMin resource.Quantity `json:"podsMin"`
-
-	// CpuStep is the incremental value of CPU cores of the Flavor.
-	CpuStep resource.Quantity `json:"cpuStep"`
-
-	// MemoryStep is the incremental value of RAM of the Flavor.
-	MemoryStep resource.Quantity `json:"memoryStep"`
-
-	// PodsStep is the incremental value of pods of the Flavor.
-	PodsStep resource.Quantity `json:"podsStep"`
 }
 
 type Price struct {
@@ -93,11 +71,8 @@ type FlavorSpec struct {
 	// It can correspond to ID of the owner FLUIDOS Node or to the ID of a FLUIDOS SuperNode that represents the entry point to a FLUIDOS Domain
 	ProviderID string `json:"providerID"`
 
-	// Type is the type of the Flavor.
-	Type FlavorType `json:"type"`
-
-	// Timestamp is the timestamp of the Flavor.
-	Timestamp metav1.Time `json:"timestamp"`
+	// FlavorType is the type of the Flavor.
+	FlavorType FlavorType `json:"flavorType"`
 
 	// Owner contains the identity info of the owner of the Flavor. It can be unknown if the Flavor is provided by a reseller or a third party.
 	Owner NodeIdentity `json:"owner"`
@@ -132,13 +107,11 @@ type FlavorStatus struct {
 //+kubebuilder:subresource:status
 
 // +kubebuilder:printcolumn:name="Provider ID",type=string,JSONPath=`.spec.providerID`
-// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.type`
-// +kubebuilder:printcolumn:name="CPU",type=string,priority=1,JSONPath=`.spec.characteristics.cpu`
-// +kubebuilder:printcolumn:name="Memory",type=string,priority=1,JSONPath=`.spec.characteristics.memory`
+// +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.flavorType.typeIdentifier`
 // +kubebuilder:printcolumn:name="Owner Name",type=string,priority=1,JSONPath=`.spec.owner.nodeID`
-// +kubebuilder:printcolumn:name="Owner Domain",type=string,priority=1,JSONPath=`.spec.owner.domain`
-// +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=`.spec.optionalFields.availability`
+ // +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=`.spec.availability`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
+// +kubebuilder:printcolumn:name="Kubernetes Node Owner",type=string,JSONPath=`.metadata.ownerReferences[0].name`
 // Flavor is the Schema for the flavors API.
 // +kubebuilder:resource:shortName=fl
 type Flavor struct {

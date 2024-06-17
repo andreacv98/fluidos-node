@@ -20,16 +20,8 @@ spec:
     - jsonPath: .spec.providerID
       name: Provider ID
       type: string
-    - jsonPath: .spec.type
+    - jsonPath: .spec.flavorType.typeIdentifier
       name: Type
-      type: string
-    - jsonPath: .spec.characteristics.cpu
-      name: CPU
-      priority: 1
-      type: string
-    - jsonPath: .spec.characteristics.memory
-      name: Memory
-      priority: 1
       type: string
     - jsonPath: .spec.owner.nodeID
       name: Owner Name
@@ -39,12 +31,15 @@ spec:
       name: Owner Domain
       priority: 1
       type: string
-    - jsonPath: .spec.optionalFields.availability
+    - jsonPath: .spec.availability
       name: Available
       type: boolean
     - jsonPath: .metadata.creationTimestamp
       name: Age
       type: date
+    - jsonPath: .metadata.ownerReferences[0].name
+      name: Kubernetes Node Owner
+      type: string
     name: v1alpha1
     schema:
       openAPIV3Schema:
@@ -73,9 +68,39 @@ spec:
               availability:
                 description: Availability is the availability flag of the Flavor.
                 type: boolean
+              flavorType:
+                description: FlavorType is the type of the Flavor.
+                properties:
+                  typeData:
+                    description: Raw is the raw value of the Flavor.
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  typeIdentifier:
+                    description: Type of the Flavor.
+                    type: string
+                required:
+                - typeData
+                - typeIdentifier
+                type: object
               location:
                 description: Location is the location of the Flavor.
-                type: string
+                properties:
+                  additionalNotes:
+                    description: AdditionalNotes are additional notes of the location.
+                    type: string
+                  city:
+                    description: City is the city of the location.
+                    type: string
+                  country:
+                    description: Country is the country of the location.
+                    type: string
+                  latitude:
+                    description: Latitude is the latitude of the location.
+                    type: string
+                  longitude:
+                    description: Longitude is the longitude of the location.
+                    type: string
+                type: object
               networkPropertyType:
                 description: NetworkPropertyType is the network property type of the
                   Flavor.
@@ -122,8 +147,7 @@ spec:
                 type: string
             required:
             - availability
-            - location
-            - networkPropertyType
+            - flavorType
             - owner
             - price
             - providerID

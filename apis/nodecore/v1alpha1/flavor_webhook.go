@@ -31,17 +31,14 @@ func (r *Flavor) SetupWebhookWithManager(mgr ctrl.Manager) error {
 		Complete()
 }
 
-// TODO(user): EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-
 //+kubebuilder:webhook:path=/mutate-nodecore-fluidos-eu-v1alpha1-flavor,mutating=true,failurePolicy=fail,sideEffects=None,groups=nodecore.fluidos.eu,resources=flavors,verbs=create;update,versions=v1alpha1,name=mflavor.kb.io,admissionReviewVersions=v1
 
 var _ webhook.Defaulter = &Flavor{}
 
 // Default implements webhook.Defaulter so a webhook will be registered for the type
 func (r *Flavor) Default() {
+	flavorlog.Info("DEFAULT WEBHOOK")
 	flavorlog.Info("default", "name", r.Name)
-
-	// TODO(user): fill in your defaulting logic.
 }
 
 // TODO(user): change verbs to "verbs=create;update;delete" if you want to enable deletion validation.
@@ -51,6 +48,7 @@ var _ webhook.Validator = &Flavor{}
 
 // ValidateCreate implements webhook.Validator so a webhook will be registered for the type
 func (r *Flavor) ValidateCreate() (admission.Warnings, error) {
+	flavorlog.Info("VALIDATE CREATE WEBHOOK")
 	flavorlog.Info("validate create", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object creation.
@@ -59,6 +57,7 @@ func (r *Flavor) ValidateCreate() (admission.Warnings, error) {
 
 // ValidateUpdate implements webhook.Validator so a webhook will be registered for the type
 func (r *Flavor) ValidateUpdate(old runtime.Object) (admission.Warnings, error) {
+	flavorlog.Info("VALIDATE UPDATE WEBHOOK")
 	flavorlog.Info("validate update", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object update.
@@ -67,6 +66,7 @@ func (r *Flavor) ValidateUpdate(old runtime.Object) (admission.Warnings, error) 
 
 // ValidateDelete implements webhook.Validator so a webhook will be registered for the type
 func (r *Flavor) ValidateDelete() (admission.Warnings, error) {
+	flavorlog.Info("VALIDATE DELETE WEBHOOK")
 	flavorlog.Info("validate delete", "name", r.Name)
 
 	// TODO(user): fill in your validation logic upon object deletion.

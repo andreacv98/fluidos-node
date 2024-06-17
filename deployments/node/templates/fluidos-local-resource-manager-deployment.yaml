@@ -52,6 +52,8 @@ spec:
           - --memory-min={{ .Values.localResourceManager.config.flavour.memoryMin }}
           - --cpu-step={{ .Values.localResourceManager.config.flavour.cpuStep }}
           - --memory-step={{ .Values.localResourceManager.config.flavour.memoryStep }}
+          - --enable-webhooks={{ .Values.webhook.enabled | default "true" }}
+          - --enable-auto-discovery={{ .Values.localResourceManager.config.enableAutoDiscovery | default "true" }}
         resources: {{- toYaml .Values.localResourceManager.pod.resources | nindent 10 }}
         ports:
         - name: healthz

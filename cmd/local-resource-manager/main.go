@@ -15,21 +15,19 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"os"
 
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/klog/v2"
 	metricsv1beta1 "k8s.io/metrics/pkg/apis/metrics/v1beta1"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
-
-	//"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
 	localresourcemanager "github.com/fluidos-project/node/pkg/local-resource-manager"
@@ -71,11 +69,15 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	enableWH := flag.Bool("enable-webhooks", true, "Enable webhooks server")
+	enableAutoDiscovery := flag.Bool("enable-auto-discovery", true, "Enable auto discovery of the node resources")
 	opts := zap.Options{
 		Development: true,
 	}
 	opts.BindFlags(flag.CommandLine)
 	flag.Parse()
+
+	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
@@ -86,10 +88,18 @@ func main() {
 		os.Exit(1)
 	}
 
+	var webhookServer webhook.Server
+
+	if *enableWH {
+		webhookServer = webhook.NewServer(webhook.Options{Port: 9443})
+	} else {
+		setupLog.Info("Webhooks are disabled")
+	}
+
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		WebhookServer: 			webhook.NewServer(webhook.Options{Port: 9443}),
+		Scheme:                 scheme,
+		MetricsBindAddress:     metricsAddr,
+		WebhookServer:          webhookServer,
 		HealthProbeBindAddress: probeAddr,
 		LeaderElection:         enableLeaderElection,
 		LeaderElectionID:       "c7b7b7b7.fluidos.eu",
@@ -102,16 +112,26 @@ func main() {
 	// Print something abou the mgr
 	setupLog.Info("Manager started", "manager", mgr)
 
-	// Register Flavor webhook
-	if err = (&nodecorev1alpha1.Flavor{}).SetupWebhookWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
+	// Register the controller
+	if err = (&localresourcemanager.NodeReconciler{
+		Client:              	cl,
+		Scheme:              	mgr.GetScheme(),
+		EnableAutoDiscovery:	*enableAutoDiscovery,
+		WebhookServer:	   		webhookServer,
+	}).SetupWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "Node")
 		os.Exit(1)
 	}
 
-	err = localresourcemanager.Start(context.Background(), cl)
-	if err != nil {
-		setupLog.Error(err, "Unable to start LocalResourceManager")
-		os.Exit(1)
+	if *enableWH {
+		// Register Flavor webhook
+		klog.Info("Registering webhooks to the manager")
+		if err = (&nodecorev1alpha1.Flavor{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
+			os.Exit(1)
+		}
+	} else {
+		setupLog.Info("Webhooks are disabled")
 	}
 
 	// Register health checks
@@ -123,6 +143,12 @@ func main() {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
+	if err := mgr.AddHealthzCheck("webhook", webhookServer.StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to set up webhook health check")
+		os.Exit(1)
+	}
+
+	
 
 	setupLog.Info("Starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
