@@ -171,7 +171,7 @@ func (r *NodeReconciler) createFlavor(ctx context.Context, nodeInfo *models.Node
 	}
 	klog.Infof("Flavor created: %s", flavorResult.Name)
 
-	return flavor, nil
+	return flavorResult, nil
 
 }
 
