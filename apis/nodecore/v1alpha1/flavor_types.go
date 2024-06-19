@@ -139,7 +139,7 @@ func init() {
 }
 
 // ParseFlavorType parses a Flavor into a the type and the unmarsheled raw value.
-func ParseFlavorType(flavor *Flavor) (error, FlavorTypeIdentifier, interface{}) {
+func ParseFlavorType(flavor *Flavor) (FlavorTypeIdentifier, interface{}, error) {
 
 	var validationErr error
 
@@ -149,17 +149,17 @@ func ParseFlavorType(flavor *Flavor) (error, FlavorTypeIdentifier, interface{}) 
 
 		var k8slice K8Slice
 		validationErr = json.Unmarshal(flavor.Spec.FlavorType.TypeData.Raw, &k8slice)
-		return validationErr, Type_K8Slice, k8slice
+		return Type_K8Slice, k8slice, validationErr
 
 	case Type_VM:
 		// TODO: Implement VM flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 
 	case Type_Service:
 		// TODO: Implement Service flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 
 	default:
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 	}
 }

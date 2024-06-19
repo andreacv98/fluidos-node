@@ -112,7 +112,7 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 
 	var modelFlavor models.Flavor
 
-	errParse, flavorType, flavorTypeStruct := nodecorev1alpha1.ParseFlavorType(flavor)
+	flavorType, flavorTypeStruct, errParse := nodecorev1alpha1.ParseFlavorType(flavor)
 	if errParse != nil {
 		return nil
 	}

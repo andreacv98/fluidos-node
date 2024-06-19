@@ -46,14 +46,14 @@ func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector *models
 
 func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
 
-	err, FlavorTypeIdentifier, flavorTypeData := nodecorev1alpha1.ParseFlavorType(f)
+	flavorTypeIdentifier, flavorTypeData, err := nodecorev1alpha1.ParseFlavorType(f)
 
 	if err != nil {
 		klog.Errorf("error parsing flavor type: %v", err)
 		return false
 	}
 
-	switch FlavorTypeIdentifier {
+	switch flavorTypeIdentifier {
 	case nodecorev1alpha1.Type_K8Slice:
 		return FilterFlavorK8Slice(selector, flavorTypeData.(*nodecorev1alpha1.K8Slice))
 	default:

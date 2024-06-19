@@ -52,7 +52,7 @@ func (r *Flavor) ValidateCreate() (admission.Warnings, error) {
 	flavorlog.Info("validate create", "name", r.Name)
 
 	// Validate creation of Flavor checking FlavorType->TypeIdenfier matches the struct inside the FlavorType->TypeData
-	err, typeIdenfier, _ := ParseFlavorType(r)
+	typeIdenfier, _, err := ParseFlavorType(r)
 	if err != nil {
 		return nil, err
 	}
@@ -76,7 +76,7 @@ func (r *Flavor) ValidateUpdate(old runtime.Object) (admission.Warnings, error) 
 	flavorlog.Info("validate update", "name", r.Name)
 
 	// Validate creation of Flavor checking FlavorType->TypeIdenfier matches the struct inside the FlavorType->TypeData
-	err, typeIdenfier, _ := ParseFlavorType(r)
+	typeIdenfier, _, err := ParseFlavorType(r)
 	if err != nil {
 		return nil, err
 	}

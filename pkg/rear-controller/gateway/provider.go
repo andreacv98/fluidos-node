@@ -75,7 +75,7 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 	max := resource.MustParse("0")
 	index := 0
 	for i := range availableFlavors {
-		err, flavorTypeIdentifier, flavorTypeData := nodecorev1alpha1.ParseFlavorType(&availableFlavors[i])
+		flavorTypeIdentifier, flavorTypeData, err := nodecorev1alpha1.ParseFlavorType(&availableFlavors[i])
 		if err != nil {
 			klog.Errorf("Error parsing the Flavor type: %s", err)
 			http.Error(w, "Error parsing the Flavor type", http.StatusInternalServerError)
@@ -182,7 +182,7 @@ func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 	index := 0
 
 	for i := range availableFlavors {
-		err, flavorTypeIdentifier, flavorTypeData := nodecorev1alpha1.ParseFlavorType(&availableFlavors[i])
+		flavorTypeIdentifier, flavorTypeData, err := nodecorev1alpha1.ParseFlavorType(&availableFlavors[i])
 		if err != nil {
 			klog.Errorf("Error parsing the Flavor type: %s", err)
 			http.Error(w, "Error parsing the Flavor type", http.StatusInternalServerError)

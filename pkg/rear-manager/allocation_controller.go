@@ -220,7 +220,7 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 
 			// Parse Flavor to get the K8Slice Characteristics
 
-			err, flavorTypeIdentifier, FlavorType := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
+			flavorTypeIdentifier, flavorType, err := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
 
 			if err != nil {
 				klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)
@@ -245,14 +245,14 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 
 			// We are handling a K8Slice type
 			// Get characteristics forcing casting
-			flavorRes := FlavorType.(*nodecorev1alpha1.K8Slice).Characteristics
+			flavorRes := flavorType.(*nodecorev1alpha1.K8Slice).Characteristics
 			allocationRes := computeK8SliceResources(contract)
 
 			newCharacteristics := computeK8SliceCharacteristics(&flavorRes, allocationRes)
 			newK8Slice := &nodecorev1alpha1.K8Slice{
 				Characteristics: *newCharacteristics,
-				Policies:        *FlavorType.(*nodecorev1alpha1.K8Slice).Policies.DeepCopy(),
-				Properties:      *FlavorType.(*nodecorev1alpha1.K8Slice).Properties.DeepCopy(),
+				Policies:        *flavorType.(*nodecorev1alpha1.K8Slice).Policies.DeepCopy(),
+				Properties:      *flavorType.(*nodecorev1alpha1.K8Slice).Properties.DeepCopy(),
 			}
 			newK8SliceBytes, err := json.Marshal(newK8Slice)
 
@@ -401,7 +401,7 @@ func (r *AllocationReconciler) handleVirtualNodeAllocation(ctx context.Context,
 func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K8SliceCharacteristics {
 	// Check Flavor in the Contract is a K8Slice type
 
-	err, flavorTypeIdentifier, FlavorType := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
+	flavorTypeIdentifier, flavorType, err := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
 
 	if err != nil {
 		klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)
@@ -419,7 +419,7 @@ func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K
 				Gpu:     contract.Spec.Partition.Gpu,
 			}
 		}
-		return FlavorType.(*nodecorev1alpha1.K8Slice).Characteristics.DeepCopy()
+		return flavorType.(*nodecorev1alpha1.K8Slice).Characteristics.DeepCopy()
 
 	} else {
 		// Flavor Type is NOT K8Slice
