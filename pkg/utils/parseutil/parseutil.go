@@ -15,9 +15,6 @@
 package parseutil
 
 import (
-	"encoding/json"
-	"fmt"
-
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
@@ -115,7 +112,7 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 
 	var modelFlavor models.Flavor
 
-	errParse, flavorType, flavorTypeStruct := ParseFlavorType(flavor)
+	errParse, flavorType, flavorTypeStruct := nodecorev1alpha1.ParseFlavorType(flavor)
 	if errParse != nil {
 		return nil
 	}
@@ -218,30 +215,4 @@ func ParseQuantityFromString(s string) resource.Quantity {
 		return *resource.NewQuantity(0, resource.DecimalSI)
 	}
 	return i
-}
-
-// ParseFlavorType parses a Flavor into a the type and the unmarsheled raw value.
-func ParseFlavorType(flavor *nodecorev1alpha1.Flavor) (error, nodecorev1alpha1.FlavorTypeIdentifier, interface{}) {
-
-	var validationErr error
-
-	switch flavor.Spec.FlavorType.TypeIdentifier {
-
-	case nodecorev1alpha1.Type_K8Slice:
-
-		var k8slice nodecorev1alpha1.K8Slice
-		validationErr = json.Unmarshal(flavor.Spec.FlavorType.TypeData.Raw, &k8slice)
-		return validationErr, nodecorev1alpha1.Type_K8Slice, k8slice
-
-	case nodecorev1alpha1.Type_VM:
-		// TODO: Implement VM flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
-
-	case nodecorev1alpha1.Type_Service:
-		// TODO: Implement Service flavor parsing
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
-
-	default:
-		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
-	}
 }

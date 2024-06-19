@@ -51,7 +51,22 @@ func (r *Flavor) ValidateCreate() (admission.Warnings, error) {
 	flavorlog.Info("VALIDATE CREATE WEBHOOK")
 	flavorlog.Info("validate create", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object creation.
+	// Validate creation of Flavor checking FlavorType->TypeIdenfier matches the struct inside the FlavorType->TypeData
+	err, typeIdenfier, _ := ParseFlavorType(r)
+	if err != nil {
+		return nil, err
+	}
+	switch typeIdenfier {
+	case Type_K8Slice:
+		flavorlog.Info("FlavorTypeIdentifier is K8Slice")
+	case Type_VM:
+		flavorlog.Info("FlavorTypeIdentifier is VM")
+	case Type_Service:
+		flavorlog.Info("FlavorTypeIdentifier is Service")
+	default:
+		flavorlog.Info("FlavorTypeIdentifier is not valid")
+	}
+
 	return nil, nil
 }
 
@@ -60,7 +75,22 @@ func (r *Flavor) ValidateUpdate(old runtime.Object) (admission.Warnings, error) 
 	flavorlog.Info("VALIDATE UPDATE WEBHOOK")
 	flavorlog.Info("validate update", "name", r.Name)
 
-	// TODO(user): fill in your validation logic upon object update.
+	// Validate creation of Flavor checking FlavorType->TypeIdenfier matches the struct inside the FlavorType->TypeData
+	err, typeIdenfier, _ := ParseFlavorType(r)
+	if err != nil {
+		return nil, err
+	}
+	switch typeIdenfier {
+	case Type_K8Slice:
+		flavorlog.Info("FlavorTypeIdentifier is K8Slice")
+	case Type_VM:
+		flavorlog.Info("FlavorTypeIdentifier is VM")
+	case Type_Service:
+		flavorlog.Info("FlavorTypeIdentifier is Service")
+	default:
+		flavorlog.Info("FlavorTypeIdentifier is not valid")
+	}
+
 	return nil, nil
 }
 

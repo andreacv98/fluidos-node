@@ -27,10 +27,6 @@ spec:
       name: Owner Name
       priority: 1
       type: string
-    - jsonPath: .spec.owner.domain
-      name: Owner Domain
-      priority: 1
-      type: string
     - jsonPath: .spec.availability
       name: Available
       type: boolean

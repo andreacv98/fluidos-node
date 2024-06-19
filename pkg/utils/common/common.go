@@ -46,7 +46,7 @@ func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector *models
 
 func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
 
-	err, FlavorTypeIdentifier, flavorTypeData := parseutil.ParseFlavorType(f)
+	err, FlavorTypeIdentifier, flavorTypeData := nodecorev1alpha1.ParseFlavorType(f)
 
 	if err != nil {
 		klog.Errorf("error parsing flavor type: %v", err)

@@ -37,7 +37,6 @@ import (
 	reservation "github.com/fluidos-project/node/apis/reservation/v1alpha1"
 	"github.com/fluidos-project/node/pkg/utils/flags"
 	"github.com/fluidos-project/node/pkg/utils/getters"
-	"github.com/fluidos-project/node/pkg/utils/parseutil"
 	"github.com/fluidos-project/node/pkg/utils/resourceforge"
 	"github.com/fluidos-project/node/pkg/utils/services"
 	virtualfabricmanager "github.com/fluidos-project/node/pkg/virtual-fabric-manager"
@@ -221,7 +220,7 @@ func (r *AllocationReconciler) handleNodeAllocation(ctx context.Context,
 
 			// Parse Flavor to get the K8Slice Characteristics
 
-			err, flavorTypeIdentifier, FlavorType := parseutil.ParseFlavorType(&contract.Spec.Flavor)
+			err, flavorTypeIdentifier, FlavorType := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
 
 			if err != nil {
 				klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)
@@ -402,7 +401,7 @@ func (r *AllocationReconciler) handleVirtualNodeAllocation(ctx context.Context,
 func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K8SliceCharacteristics {
 	// Check Flavor in the Contract is a K8Slice type
 
-	err, flavorTypeIdentifier, FlavorType := parseutil.ParseFlavorType(&contract.Spec.Flavor)
+	err, flavorTypeIdentifier, FlavorType := nodecorev1alpha1.ParseFlavorType(&contract.Spec.Flavor)
 
 	if err != nil {
 		klog.Errorf("Error when parsing Flavor %s: %v", contract.Spec.Flavor.Name, err)

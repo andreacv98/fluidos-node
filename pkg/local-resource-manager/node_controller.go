@@ -48,7 +48,7 @@ type NodeReconciler struct {
 	client.Client
 	Scheme              *runtime.Scheme
 	EnableAutoDiscovery bool
-	WebhookServer	   webhook.Server
+	WebhookServer       webhook.Server
 }
 
 // Reconcile reconciles a Node object to create Flavor objects
@@ -64,9 +64,9 @@ func (r *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.
 
 	// Check if the webhook server is running
 	if err := r.WebhookServer.StartedChecker()(nil); err != nil {
-        klog.Info("Webhook server not started yet, requeuing the request")
-        return ctrl.Result{Requeue: true}, nil
-    }
+		klog.Info("Webhook server not started yet, requeuing the request")
+		return ctrl.Result{Requeue: true}, nil
+	}
 
 	// Set for labels over the node
 	labelSelector := labels.Set{flags.ResourceNodeLabel: "true"}.AsSelector()

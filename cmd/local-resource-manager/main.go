@@ -114,10 +114,10 @@ func main() {
 
 	// Register the controller
 	if err = (&localresourcemanager.NodeReconciler{
-		Client:              	cl,
-		Scheme:              	mgr.GetScheme(),
-		EnableAutoDiscovery:	*enableAutoDiscovery,
-		WebhookServer:	   		webhookServer,
+		Client:              cl,
+		Scheme:              mgr.GetScheme(),
+		EnableAutoDiscovery: *enableAutoDiscovery,
+		WebhookServer:       webhookServer,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Node")
 		os.Exit(1)
@@ -147,8 +147,6 @@ func main() {
 		setupLog.Error(err, "unable to set up webhook health check")
 		os.Exit(1)
 	}
-
-	
 
 	setupLog.Info("Starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

@@ -15,6 +15,9 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 )
@@ -109,7 +112,7 @@ type FlavorStatus struct {
 // +kubebuilder:printcolumn:name="Provider ID",type=string,JSONPath=`.spec.providerID`
 // +kubebuilder:printcolumn:name="Type",type=string,JSONPath=`.spec.flavorType.typeIdentifier`
 // +kubebuilder:printcolumn:name="Owner Name",type=string,priority=1,JSONPath=`.spec.owner.nodeID`
- // +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=`.spec.availability`
+// +kubebuilder:printcolumn:name="Available",type=boolean,JSONPath=`.spec.availability`
 // +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 // +kubebuilder:printcolumn:name="Kubernetes Node Owner",type=string,JSONPath=`.metadata.ownerReferences[0].name`
 // Flavor is the Schema for the flavors API.
@@ -133,4 +136,30 @@ type FlavorList struct {
 
 func init() {
 	SchemeBuilder.Register(&Flavor{}, &FlavorList{})
+}
+
+// ParseFlavorType parses a Flavor into a the type and the unmarsheled raw value.
+func ParseFlavorType(flavor *Flavor) (error, FlavorTypeIdentifier, interface{}) {
+
+	var validationErr error
+
+	switch flavor.Spec.FlavorType.TypeIdentifier {
+
+	case Type_K8Slice:
+
+		var k8slice K8Slice
+		validationErr = json.Unmarshal(flavor.Spec.FlavorType.TypeData.Raw, &k8slice)
+		return validationErr, Type_K8Slice, k8slice
+
+	case Type_VM:
+		// TODO: Implement VM flavor parsing
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+
+	case Type_Service:
+		// TODO: Implement Service flavor parsing
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+
+	default:
+		return fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier), "", nil
+	}
 }
