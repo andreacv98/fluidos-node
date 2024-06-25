@@ -30,6 +30,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
 	advertisementv1alpha1 "github.com/fluidos-project/node/apis/advertisement/v1alpha1"
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
@@ -60,6 +61,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	enableWH := flag.Bool("enable-webhooks", true, "Enable webhooks server")
 	opts := zap.Options{
 		Development: true,
 	}
@@ -67,6 +69,14 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	var webhookServer webhook.Server
+
+	if *enableWH {
+		webhookServer = webhook.NewServer(webhook.Options{Port: 9443})
+	} else {
+		setupLog.Info("Webhooks are disabled")
+	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                 scheme,
@@ -109,20 +119,34 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "Allocation")
 		os.Exit(1)
 	}
+
+	if *enableWH {
+		// Register Solver webhook
+		setupLog.Info("Registering webhooks to the manager")
+		if err = (&nodecorev1alpha1.Solver{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
+			os.Exit(1)
+		}
+	} else {
+		setupLog.Info("Webhooks are disabled")
+	}
+
 	//+kubebuilder:scaffold:builder
 
 	if err := mgr.AddHealthzCheck("healthz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up health check")
 		os.Exit(1)
 	}
+
 	if err := mgr.AddReadyzCheck("readyz", healthz.Ping); err != nil {
 		setupLog.Error(err, "unable to set up ready check")
 		os.Exit(1)
 	}
 
-	//nolint:gocritic // This code is needed to register the webhook
-	// av := rearmanager.NewValidator(mgr.GetClient())
-	// mgr.GetWebhookServer().Register("/validate/allocation", &webhook.Admission{Handler: av})
+	if err := mgr.AddHealthzCheck("webhook", webhookServer.StartedChecker()); err != nil {
+		setupLog.Error(err, "unable to set up webhook health check")
+		os.Exit(1)
+	}
 
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {

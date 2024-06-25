@@ -14,7 +14,9 @@
 
 package v1alpha1
 
-import "k8s.io/apimachinery/pkg/api/resource"
+import (
+	"k8s.io/apimachinery/pkg/api/resource"
+)
 
 // K8Slice represents a K8Slice Flavor.
 type K8Slice struct {
@@ -27,7 +29,7 @@ type K8Slice struct {
 }
 
 // GetFlavorType returns the type of the Flavor.
-func (k8s *K8Slice) GetFlavorType() FlavorTypeIdentifier {
+func (k8s K8Slice) GetFlavorType() FlavorTypeIdentifier {
 	return Type_K8Slice
 }
 

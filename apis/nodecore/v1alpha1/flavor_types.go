@@ -153,13 +153,13 @@ func ParseFlavorType(flavor *Flavor) (FlavorTypeIdentifier, interface{}, error) 
 
 	case Type_VM:
 		// TODO: Implement VM flavor parsing
-		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
+		return "", nil, fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 
 	case Type_Service:
 		// TODO: Implement Service flavor parsing
-		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
+		return "", nil, fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 
 	default:
-		return "", nil ,fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
+		return "", nil, fmt.Errorf("flavor type %s not supported", flavor.Spec.FlavorType.TypeIdentifier)
 	}
 }

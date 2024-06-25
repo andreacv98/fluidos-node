@@ -15,8 +15,11 @@
 package v1alpha1
 
 import (
-	resource "k8s.io/apimachinery/pkg/api/resource"
+	"encoding/json"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 type Phase string
@@ -30,41 +33,16 @@ type PhaseStatus struct {
 	EndTime        string `json:"endTime,omitempty"`
 }
 
-type FlavorSelector struct {
-	FlavorType    string         `json:"type"`
-	Architecture  string         `json:"architecture"`
-	RangeSelector *RangeSelector `json:"rangeSelector,omitempty"`
-	MatchSelector *MatchSelector `json:"matchSelector,omitempty"`
-}
-
-// MatchSelector represents the criteria for selecting Flavors through a strict match.
-type MatchSelector struct {
-	CPU     resource.Quantity `json:"cpu,omitempty"`
-	Memory  resource.Quantity `json:"memory,omitempty"`
-	Pods    resource.Quantity `json:"pods,omitempty"`
-	Storage resource.Quantity `json:"storage,omitempty"`
-	Gpu     *GPU              `json:"gpu,omitempty"`
-}
-
-// RangeSelector represents the criteria for selecting Flavors through a range.
-type RangeSelector struct {
-	MinCpu     resource.Quantity `json:"minCpu,omitempty"`
-	MinMemory  resource.Quantity `json:"minMemory,omitempty"`
-	MinPods    resource.Quantity `json:"minPods,omitempty"`
-	MinStorage resource.Quantity `json:"minStorage,omitempty"`
-	MinGpu     *GPU              `json:"minGpu,omitempty"`
-	MaxCpu     resource.Quantity `json:"MaxCpu,omitempty"`
-	MaxMemory  resource.Quantity `json:"MaxMemory,omitempty"`
-	MaxPods    resource.Quantity `json:"MaxPods,omitempty"`
-	MaxStorage resource.Quantity `json:"MaxStorage,omitempty"`
-	MaxGpu     *GPU              `json:"MaxGpu,omitempty"`
+type SolverType struct {
+	SolverTypeIdentifier FlavorTypeIdentifier `json:"solverTypeIdentifier"`
+	SolverTypeData       runtime.RawExtension `json:"solverTypeData"`
 }
 
 // SolverSpec defines the desired state of Solver
 type SolverSpec struct {
 
 	// Selector contains the flavor requirements for the solver.
-	Selector *FlavorSelector `json:"selector,omitempty"`
+	SolverType *SolverType `json:"solverType,omitempty"`
 
 	// IntentID is the ID of the intent that the Node Orchestrator is trying to solve.
 	// It is used to link the solver with the intent.
@@ -157,4 +135,23 @@ type SolverList struct {
 
 func init() {
 	SchemeBuilder.Register(&Solver{}, &SolverList{})
+}
+
+// ParseSolverType is a utility function that extracts the SolverTypeIdentifier and the SolverTypeData from the Solver.
+func ParseSolverType(s *Solver) (FlavorTypeIdentifier, interface{}, error) {
+	// TODO: Implement the function
+
+	var validationErr error
+
+	switch s.Spec.SolverType.SolverTypeIdentifier {
+
+	case Type_K8Slice:
+
+		var k8sliceFilter K8SliceFilter
+		validationErr = json.Unmarshal(s.Spec.SolverType.SolverTypeData.Raw, &k8sliceFilter)
+		return Type_K8Slice, k8sliceFilter, validationErr
+	default:
+		return "", nil, fmt.Errorf("solver type %s not supported", s.Spec.SolverType.SolverTypeIdentifier)
+
+	}
 }
