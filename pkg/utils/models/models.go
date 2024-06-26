@@ -81,31 +81,45 @@ type Price struct {
 }
 
 // Selector represents the criteria for selecting Flavors.
-type Selector struct {
-	FlavorType    string         `json:"type,omitempty"`
-	RangeSelector *RangeSelector `json:"rangeSelector,omitempty"`
-	MatchSelector *MatchSelector `json:"matchSelector,omitempty"`
+type Selector interface {
+	GetSelectorType() FlavorTypeName
 }
 
-// MatchSelector represents the criteria for selecting Flavors through a strict match.
-type MatchSelector struct {
-	CPU     resource.Quantity   `json:"cpu,omitempty"`
-	Memory  resource.Quantity   `json:"memory,omitempty"`
-	Pods    resource.Quantity   `json:"pods,omitempty"`
-	Storage resource.Quantity   `json:"storage,omitempty"`
-	Gpu     *GpuCharacteristics `json:"gpu,omitempty"`
+type K8SliceSelector struct {
+	Cpu     ResourceQuantityFilter `schema:"cpu"`
+	Memory  ResourceQuantityFilter `schema:"memory"`
+	Pods    ResourceQuantityFilter `schema:"pods"`
+	Storage ResourceQuantityFilter `schema:"storage"`
 }
 
-// RangeSelector represents the criteria for selecting Flavors through a range.
-type RangeSelector struct {
-	MinCPU     resource.Quantity   `json:"minCpu,omitempty"`
-	MinMemory  resource.Quantity   `json:"minMemory,omitempty"`
-	MinPods    resource.Quantity   `json:"minPods,omitempty"`
-	MinStorage resource.Quantity   `json:"minStorage,omitempty"`
-	MinGpu     *GpuCharacteristics `json:"minGpu,omitempty"`
-	MaxCPU     resource.Quantity   `json:"maxCpu,omitempty"`
-	MaxMemory  resource.Quantity   `json:"maxMemory,omitempty"`
-	MaxPods    resource.Quantity   `json:"maxPods,omitempty"`
-	MaxStorage resource.Quantity   `json:"maxStorage,omitempty"`
-	MaxGpu     *GpuCharacteristics `json:"maxGpu,omitempty"`
+func (ks K8SliceSelector) GetSelectorType() FlavorTypeName {
+	return K8SliceNameDefault
+}
+
+type ResourceQuantityFilter interface {
+	GetFilterType() FilterType
+}
+
+type FilterType string
+
+const (
+	MatchFilter FilterType = "Match"
+	RangeFilter FilterType = "Range"
+)
+
+type ResourceQuantityMatchFilter struct {
+	Value resource.Quantity `schema:"value"`
+}
+
+func (fq ResourceQuantityMatchFilter) GetFilterType() FilterType {
+	return MatchFilter
+}
+
+type ResourceQuantityRangeFilter struct {
+	Min resource.Quantity `schema:"min"`
+	Max resource.Quantity `schema:"max"`
+}
+
+func (fq ResourceQuantityRangeFilter) GetFilterType() FilterType {
+	return RangeFilter
 }

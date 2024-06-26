@@ -17,7 +17,6 @@ package gateway
 import (
 	"context"
 	"encoding/json"
-	"io"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -106,23 +105,16 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 }
 
 // getFlavorBySelectorHandler gets the flavor CRs from the cluster that match the selector.
-func (g *Gateway) getFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
+func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
-	klog.Infof("Processing request for getting Flavors by selector...")
+	klog.Infof("Processing request for getting K8Slice Flavors by selector...")
 
-	// Read the request body
-	body, err := io.ReadAll(r.Body)
+	// build the selector from the url query parameters
+	selector, err := queryParamToSelector(r.URL.Query(), models.SensorNameDefault)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
-	// build the selector from the request body
-	selector, err := buildSelector(body)
-	if err != nil {
-		klog.Errorf("Error building the selector: %s", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		klog.Errorf("Error building the selector from the URL query parameters: %s", err)
+		http.Error(w, "Error building the selector from the URL query parameters", http.StatusBadRequest)
 		return
 	}
 

@@ -32,7 +32,7 @@ type TransactionSpec struct {
 	ClusterID string `json:"clusterID"`
 
 	// Partition is the partition of the flavor that is being reserved
-	Partition *nodecorev1alpha1.Partition `json:"partition,omitempty"`
+	Partition *nodecorev1alpha1.K8SlicePartition `json:"partition,omitempty"`
 
 	// StartTime is the time at which the reservation should start
 	StartTime string `json:"startTime,omitempty"`

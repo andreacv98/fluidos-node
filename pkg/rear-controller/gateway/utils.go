@@ -1,4 +1,4 @@
-// Copyright 2022-2023 FLUIDOS Project
+// Copyright 2022-2024 FLUIDOS Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,19 +18,47 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"net/url"
+
+	"github.com/gorilla/schema"
 
 	"github.com/fluidos-project/node/pkg/utils/models"
 )
 
-// buildSelector builds a selector from a request body.
-func buildSelector(body []byte) (*models.Selector, error) {
-	// Parse the request body into the APIRequest struct
-	var selector models.Selector
-	err := json.Unmarshal(body, &selector)
-	if err != nil {
-		return &models.Selector{}, err
+// selectorToQueryParams converts a selector to a query string.
+func selectorToQueryParams(selector models.Selector) (string, error) {
+	var values url.Values
+	var encoder = schema.NewEncoder()
+
+	switch selector.GetSelectorType() {
+	case models.K8SliceNameDefault:
+		err := encoder.Encode(selector.(models.K8SliceSelector), values)
+		if err != nil {
+			return "", err
+		}
+
+		return values.Encode(), nil
+	default:
+		return "", fmt.Errorf("unsupported selector type")
 	}
-	return &selector, nil
+}
+
+// queryParamToSelector converts a query string to a selector.
+func queryParamToSelector(queryValues url.Values, selectorType models.FlavorTypeName) (models.Selector, error) {
+
+	var decoder = schema.NewDecoder()
+
+	switch selectorType {
+	case models.K8SliceNameDefault:
+		var selector models.K8SliceSelector
+		err := decoder.Decode(&selector, queryValues)
+		if err != nil {
+			return nil, err
+		}
+		return selector, nil
+	default:
+		return nil, fmt.Errorf("unsupported selector type")
+	}
 }
 
 // GetTransaction returns a transaction from the transactions map.

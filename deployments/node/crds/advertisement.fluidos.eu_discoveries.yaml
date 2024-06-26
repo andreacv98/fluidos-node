@@ -58,6 +58,20 @@ spec:
           spec:
             description: DiscoverySpec defines the desired state of Discovery
             properties:
+              selector:
+                description: |-
+                  This is the FlavourSelector that describes the characteristics of the intent that the solver is looking to satisfy
+                  This pattern corresponds to what has been defined in the REAR Protocol to do a discovery with a selector
+                properties:
+                  selectorTypeData:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  selectorTypeIdentifier:
+                    type: string
+                required:
+                - selectorTypeData
+                - selectorTypeIdentifier
+                type: object
               solverID:
                 description: |-
                   This is the Solver ID of the solver that creates and so asks for the discovery.
@@ -69,6 +83,7 @@ spec:
                   In order to have periodic updates of the status of the matching Flavor
                 type: boolean
             required:
+            - selector
             - solverID
             - subscribe
             type: object

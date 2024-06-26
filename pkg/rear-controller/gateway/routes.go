@@ -12,15 +12,20 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package v1alpha1
+package gateway
 
-type K8SliceSelector struct {
-	CpuFilter     *ResourceQuantityFilter `json:"cpuFilter,omitempty"`
-	MemoryFilter  *ResourceQuantityFilter `json:"memoryFilter,omitempty"`
-	PodsFilter    *ResourceQuantityFilter `json:"podsFilter,omitempty"`
-	StorageFilter *ResourceQuantityFilter `json:"storageFilter,omitempty"`
-}
-
-func (*K8SliceSelector) GetFlavorTypeSelector() FlavorTypeIdentifier {
-	return Type_K8Slice
+var Routes = struct {
+	Flavors        string
+	K8SliceFlavors string
+	VMFlavors      string
+	ServiceFlavors string
+	Reserve        string
+	Purchase       string
+}{
+	Flavors:        "/api/v1/flavors",
+	K8SliceFlavors: "/api/v1/flavors/k8slice",
+	VMFlavors:      "/api/v1/flavors/vm",
+	ServiceFlavors: "/api/v1/flavors/service",
+	Reserve:        "/api/v1/flavors/{flavorID}/reserve",
+	Purchase:       "/api/v1/transactions/{transactionID}/purchase",
 }

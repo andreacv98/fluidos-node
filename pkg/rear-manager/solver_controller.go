@@ -265,7 +265,7 @@ func (r *SolverReconciler) handleReserveAndBuy(ctx context.Context, req ctrl.Req
 	reserveAndBuyStatus := solver.Status.ReserveAndBuy
 	switch reserveAndBuyStatus {
 	case nodecorev1alpha1.PhaseIdle:
-		var partition *nodecorev1alpha1.Partition
+		var partition *nodecorev1alpha1.K8SlicePartition
 		klog.Infof("Creating the Reservation %s", req.NamespacedName.Name)
 		var pcList []advertisementv1alpha1.PeeringCandidate
 		pc := advertisementv1alpha1.PeeringCandidate{}
@@ -300,7 +300,20 @@ func (r *SolverReconciler) handleReserveAndBuy(ctx context.Context, req ctrl.Req
 
 		if solver.Spec.Selector != nil {
 			// Forge the Partition
-			partition = resourceforge.ForgePartition(solver.Spec.Selector)
+
+			// Parse Solver Selector
+			solverTypeIdentifier, solverTypeData, err := nodecorev1alpha1.ParseSolverSelector(solver.Spec.Selector)
+			if err != nil {
+				klog.Errorf("Error when parsing Solver Selector for Solver %s: %s", solver.Name, err)
+				return ctrl.Result{}, err
+			}
+			if solverTypeIdentifier == nodecorev1alpha1.Type_K8Slice {
+				// Forge partition
+				k8sliceSelector := solverTypeData.(nodecorev1alpha1.K8SliceSelector)
+				partition = resourceforge.ForgeK8SlicePartition(&k8sliceSelector)
+			}
+			// TODO: If not K8Slice, implement the other types partitions if possible
+
 		}
 
 		// Get the NodeIdentity

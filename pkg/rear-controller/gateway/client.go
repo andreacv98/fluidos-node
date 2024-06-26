@@ -1,4 +1,4 @@
-// Copyright 2022-2023 FLUIDOS Project
+// Copyright 2022-2024 FLUIDOS Project
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"k8s.io/klog/v2"
 
@@ -29,8 +30,6 @@ import (
 	"github.com/fluidos-project/node/pkg/utils/models"
 	"github.com/fluidos-project/node/pkg/utils/parseutil"
 )
-
-// TODO: move this function into the REAR Gateway package
 
 // ReserveFlavor reserves a flavor with the given flavorID.
 func (g *Gateway) ReserveFlavor(ctx context.Context, reservation *reservationv1alpha1.Reservation, flavorID string) (*models.Transaction, error) {
@@ -76,7 +75,8 @@ func (g *Gateway) ReserveFlavor(ctx context.Context, reservation *reservationv1a
 
 	// TODO: this url should be taken from the nodeIdentity of the flavor
 	bodyBytes := bytes.NewBuffer(selectorBytes)
-	url := fmt.Sprintf("http://%s%s%s", reservation.Spec.Seller.IP, ReserveFlavorPath, flavorID)
+	apiPath := strings.Replace(Routes.Reserve, "{flavorID}", flavorID, 1)
+	url := fmt.Sprintf("http://%s%s", reservation.Spec.Seller.IP, apiPath)
 
 	klog.Infof("Sending request to %s", url)
 
@@ -87,7 +87,13 @@ func (g *Gateway) ReserveFlavor(ctx context.Context, reservation *reservationv1a
 	defer resp.Body.Close()
 
 	// Check if the response status code is 200 (OK)
-	if resp.StatusCode != http.StatusOK {
+	switch resp.StatusCode {
+	case http.StatusOK:
+		klog.Infof("Received OK response status code: %v", resp)
+	case http.StatusNotFound:
+		klog.Errorf("Received NOT FOUND response status code: %v", resp)
+		return nil, fmt.Errorf("received NOT FOUND response status code: %d", resp.StatusCode)
+	default:
 		klog.Errorf("Received non-OK response status code: %v", resp)
 		return nil, fmt.Errorf("received non-OK response status code: %d", resp.StatusCode)
 	}
@@ -136,8 +142,8 @@ func (g *Gateway) PurchaseFlavor(ctx context.Context, transactionID string, sell
 	}
 
 	bodyBytes := bytes.NewBuffer(selectorBytes)
-	// TODO: this url should be taken from the nodeIdentity of the flavor
-	url := fmt.Sprintf("http://%s%s%s", seller.IP, PurchaseFlavorPath, transactionID)
+	apiPath := strings.Replace(Routes.Purchase, "{transactionID}", transactionID, 1)
+	url := fmt.Sprintf("http://%s%s", seller.IP, apiPath)
 
 	resp, err := makeRequest(ctx, "POST", url, bodyBytes)
 	if err != nil {
@@ -158,13 +164,13 @@ func (g *Gateway) PurchaseFlavor(ctx context.Context, transactionID string, sell
 }
 
 // DiscoverFlavors is a function that returns an array of Flavor that fit the Selector by performing a get request to an http server.
-func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha1.FlavorSelector) ([]*nodecorev1alpha1.Flavor, error) {
+func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha1.Selector) ([]*nodecorev1alpha1.Flavor, error) {
 	err := checkLiqoReadiness(g.LiqoReady)
 	if err != nil {
 		return nil, err
 	}
 
-	var s *models.Selector
+	var s models.Selector
 	var flavorsCR []*nodecorev1alpha1.Flavor
 
 	if selector != nil {
@@ -175,17 +181,17 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 
 	// Send the POST request to all the servers in the list
 	for _, provider := range providers {
-		flavor, err := discover(ctx, s, provider)
+		flavors, err := discover(ctx, s, provider)
 		if err != nil {
 			klog.Errorf("Error when searching Flavor: %s", err)
 			return nil, err
 		}
 		// Check if the flavor is nil
-		if flavor == nil {
+		if len(flavors) == 0 {
 			klog.Infof("No Flavors found for provider %s", provider)
 		} else {
-			klog.Infof("Flavor found for provider %s", provider)
-			flavorsCR = append(flavorsCR, flavor)
+			klog.Infof("Flavors found for provider %s: %d", provider, len(flavors))
+			flavorsCR = append(flavorsCR, flavors...)
 		}
 	}
 
@@ -193,7 +199,7 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 	return flavorsCR, nil
 }
 
-func discover(ctx context.Context, s *models.Selector, provider string) (*nodecorev1alpha1.Flavor, error) {
+func discover(ctx context.Context, s models.Selector, provider string) ([]*nodecorev1alpha1.Flavor, error) {
 	if s != nil {
 		klog.Infof("Searching Flavor with selector %v", s)
 		return searchFlavorWithSelector(ctx, s, provider)

@@ -107,12 +107,11 @@ func (g *Gateway) Start(ctx context.Context) error {
 	router.Use(g.readinessMiddleware)
 
 	// Gateway endpoints
-	router.HandleFunc(ListFlavorsPath, g.getFlavors).Methods("GET")
-	//nolint:gocritic // For the moment we are not using this endpoint
-	// router.HandleFunc(LIST_FLAVOUR_BY_ID_PATH+"{flavorID}", g.getFlavorByID).Methods("GET")
-	router.HandleFunc(ListFlavorsBySelectorPath, g.getFlavorsBySelector).Methods("POST")
-	router.HandleFunc(ReserveFlavorPath+"{flavorID}", g.reserveFlavor).Methods("POST")
-	router.HandleFunc(PurchaseFlavorPath+"{transactionID}", g.purchaseFlavor).Methods("POST")
+	router.HandleFunc(Routes.Flavors, g.getFlavors).Methods("GET")
+	router.HandleFunc(Routes.K8SliceFlavors, g.getK8SliceFlavorsBySelector).Methods("GET")
+	// TODO: Implement the other selector types
+	router.HandleFunc(Routes.Reserve, g.reserveFlavor).Methods("POST")
+	router.HandleFunc(Routes.Purchase, g.purchaseFlavor).Methods("POST")
 
 	// Configure the HTTP server
 	//nolint:gosec // we are not using a TLS certificate

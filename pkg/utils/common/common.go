@@ -28,13 +28,14 @@ import (
 )
 
 // FilterFlavorsBySelector returns the Flavor CRs in the cluster that match the selector.
-func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector *models.Selector) ([]nodecorev1alpha1.Flavor, error) {
+func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector models.Selector) ([]nodecorev1alpha1.Flavor, error) {
 	var flavorsSelected []nodecorev1alpha1.Flavor
 
 	// Get the Flavors that match the selector
 	for i := range flavors {
 		f := flavors[i]
-		if string(f.Spec.FlavorType.TypeIdentifier) == selector.FlavorType {
+		// TODO: Not very strong and nice comparison, needs to be reviewed and improved
+		if string(f.Spec.FlavorType.TypeIdentifier) == string(selector.GetSelectorType()) {
 			if FilterFlavor(selector, &f) {
 				flavorsSelected = append(flavorsSelected, f)
 			}
@@ -44,7 +45,7 @@ func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector *models
 	return flavorsSelected, nil
 }
 
-func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
+func FilterFlavor(selector models.Selector, f *nodecorev1alpha1.Flavor) bool {
 
 	flavorTypeIdentifier, flavorTypeData, err := nodecorev1alpha1.ParseFlavorType(f)
 
@@ -55,7 +56,14 @@ func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
 
 	switch flavorTypeIdentifier {
 	case nodecorev1alpha1.Type_K8Slice:
-		return FilterFlavorK8Slice(selector, flavorTypeData.(*nodecorev1alpha1.K8Slice))
+		// Check if selector type matches flavor type
+		if selector.GetSelectorType() != models.K8SliceNameDefault {
+			klog.Errorf("selector type %s does not match flavor type %s", selector.GetSelectorType(), models.K8SliceNameDefault)
+			return false
+		}
+		// Cast the selector to a K8Slice selector
+		k8sliceSelector := selector.(*models.K8SliceSelector)
+		return FilterFlavorK8Slice(k8sliceSelector, flavorTypeData.(*nodecorev1alpha1.K8Slice))
 	default:
 		// Flavor type not supported
 		klog.Errorf("flavor type %s not supported", f.Spec.FlavorType.TypeIdentifier)
@@ -64,120 +72,111 @@ func FilterFlavor(selector *models.Selector, f *nodecorev1alpha1.Flavor) bool {
 }
 
 // FilterFlavorK8Slice filters the K8Slice Flavor CRs in the cluster that match the selector.
-func FilterFlavorK8Slice(selector *models.Selector, flavorTypeK8Slice *nodecorev1alpha1.K8Slice) bool {
+func FilterFlavorK8Slice(selector *models.K8SliceSelector, flavorTypeK8Slice *nodecorev1alpha1.K8Slice) bool {
 
-	if selector.MatchSelector != nil {
-		return FilterFlavorK8Slice(selector, flavorTypeK8Slice)
+	// CPU Filter
+	if selector.Cpu != nil {
+		// Check if the flavor matches the CPU filter
+		switch selector.Cpu.GetFilterType() {
+		case models.MatchFilter:
+			// Cast the CPU filter to a match filter
+			cpuFilter := selector.Cpu.(*models.ResourceQuantityMatchFilter)
+			// Check if the flavor CPU matches the filter
+			if flavorTypeK8Slice.Characteristics.Cpu.Cmp(cpuFilter.Value) != 0 {
+				klog.Infof("CPU Filter: %d - Flavor CPU: %d", cpuFilter.Value, flavorTypeK8Slice.Characteristics.Cpu)
+				return false
+			}
+		case models.RangeFilter:
+			// Cast the CPU filter to a range filter
+			cpuFilter := selector.Cpu.(*models.ResourceQuantityRangeFilter)
+			// Check if the flavor CPU is within the range
+			if flavorTypeK8Slice.Characteristics.Cpu.Cmp(cpuFilter.Min) < 0 || flavorTypeK8Slice.Characteristics.Cpu.Cmp(cpuFilter.Max) > 0 {
+				klog.Infof("CPU Filter: %d-%d - Flavor CPU: %d", cpuFilter.Min, cpuFilter.Max, flavorTypeK8Slice.Characteristics.Cpu)
+				return false
+			}
+		}
 	}
 
-	if selector.RangeSelector != nil && selector.MatchSelector == nil {
-		return filterK8SliceByRangeSelector(selector, flavorTypeK8Slice)
+	// Memory Filter
+	if selector.Memory != nil {
+		// Check if the flavor matches the Memory filter
+		switch selector.Memory.GetFilterType() {
+		case models.MatchFilter:
+			memoryFilter := selector.Memory.(*models.ResourceQuantityMatchFilter)
+			if flavorTypeK8Slice.Characteristics.Memory.Cmp(memoryFilter.Value) != 0 {
+				klog.Infof("Memory Filter: %d - Flavor Memory: %d", memoryFilter.Value, flavorTypeK8Slice.Characteristics.Memory)
+				return false
+			}
+		case models.RangeFilter:
+			memoryFilter := selector.Memory.(*models.ResourceQuantityRangeFilter)
+			if flavorTypeK8Slice.Characteristics.Memory.Cmp(memoryFilter.Min) < 0 || flavorTypeK8Slice.Characteristics.Memory.Cmp(memoryFilter.Max) > 0 {
+				klog.Infof("Memory Filter: %d-%d - Flavor Memory: %d", memoryFilter.Min, memoryFilter.Max, flavorTypeK8Slice.Characteristics.Memory)
+				return false
+			}
+		}
 	}
 
-	return true
-
-}
-
-func filterK8SliceByMatchSelector(selector *models.Selector, k8sliceFlavor *nodecorev1alpha1.K8Slice) bool {
-	if selector.MatchSelector.CPU.CmpInt64(0) == 0 && k8sliceFlavor.Characteristics.Cpu.Cmp(selector.MatchSelector.CPU) != 0 {
-		klog.Infof("MatchSelector Cpu: %d - Flavor Cpu: %d", selector.MatchSelector.CPU, k8sliceFlavor.Characteristics.Cpu)
-		return false
+	// Pods Filter
+	if selector.Pods != nil {
+		// Check if the flavor matches the Pods filter
+		switch selector.Pods.GetFilterType() {
+		case models.MatchFilter:
+			podsFilter := selector.Pods.(*models.ResourceQuantityMatchFilter)
+			if flavorTypeK8Slice.Characteristics.Pods.Cmp(podsFilter.Value) != 0 {
+				klog.Infof("Pods Filter: %d - Flavor Pods: %d", podsFilter.Value, flavorTypeK8Slice.Characteristics.Pods)
+				return false
+			}
+		case models.RangeFilter:
+			podsFilter := selector.Pods.(*models.ResourceQuantityRangeFilter)
+			if flavorTypeK8Slice.Characteristics.Pods.Cmp(podsFilter.Min) < 0 || flavorTypeK8Slice.Characteristics.Pods.Cmp(podsFilter.Max) > 0 {
+				klog.Infof("Pods Filter: %d-%d - Flavor Pods: %d", podsFilter.Min, podsFilter.Max, flavorTypeK8Slice.Characteristics.Pods)
+				return false
+			}
+		}
 	}
 
-	if selector.MatchSelector.Memory.CmpInt64(0) == 0 && k8sliceFlavor.Characteristics.Memory.Cmp(selector.MatchSelector.Memory) != 0 {
-		klog.Infof("MatchSelector Memory: %d - Flavor Memory: %d", selector.MatchSelector.Memory, k8sliceFlavor.Characteristics.Memory)
-		return false
-	}
-
-	if selector.MatchSelector.Pods.CmpInt64(0) == 0 && k8sliceFlavor.Characteristics.Pods.Cmp(selector.MatchSelector.Pods) != 0 {
-		klog.Infof("MatchSelector Pods: %d - Flavor Pods: %d", selector.MatchSelector.Pods, k8sliceFlavor.Characteristics.Pods)
-		return false
-	}
-
-	if selector.MatchSelector.Storage.CmpInt64(0) == 0 &&
-		k8sliceFlavor.Characteristics.Storage.Cmp(selector.MatchSelector.Storage) != 0 {
-		klog.Infof("MatchSelector EphemeralStorage: %d - Flavor EphemeralStorage: %d",
-			selector.MatchSelector.Storage, k8sliceFlavor.Characteristics.Storage)
-		return false
-	}
-
-	if selector.MatchSelector.Gpu != nil && k8sliceFlavor.Characteristics.Gpu == nil {
-		if selector.MatchSelector.Gpu.Cmp(*k8sliceFlavor.Characteristics.Gpu) != 0 {
-			klog.Infof("MatchSelector GPU: %d - Flavor GPU: %d", selector.MatchSelector.Gpu, k8sliceFlavor.Characteristics.Gpu)
-			return false
+	// Storage Filter
+	if selector.Storage != nil {
+		// Check if the flavor matches the Storage filter
+		switch selector.Storage.GetFilterType() {
+		case models.MatchFilter:
+			storageFilter := selector.Storage.(*models.ResourceQuantityMatchFilter)
+			if flavorTypeK8Slice.Characteristics.Storage.Cmp(storageFilter.Value) != 0 {
+				klog.Infof("Storage Filter: %d - Flavor Storage: %d", storageFilter.Value, flavorTypeK8Slice.Characteristics.Storage)
+				return false
+			}
+		case models.RangeFilter:
+			storageFilter := selector.Storage.(*models.ResourceQuantityRangeFilter)
+			if flavorTypeK8Slice.Characteristics.Storage.Cmp(storageFilter.Min) < 0 || flavorTypeK8Slice.Characteristics.Storage.Cmp(storageFilter.Max) > 0 {
+				klog.Infof("Storage Filter: %d-%d - Flavor Storage: %d", storageFilter.Min, storageFilter.Max, flavorTypeK8Slice.Characteristics.Storage)
+				return false
+			}
 		}
 	}
 
 	return true
-}
 
-func filterK8SliceByRangeSelector(selector *models.Selector, k8sliceFlavor *nodecorev1alpha1.K8Slice) bool {
-	if selector.RangeSelector.MinCPU.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Cpu.Cmp(selector.RangeSelector.MinCPU) < 0 {
-		klog.Infof("RangeSelector MinCpu: %d - Flavor Cpu: %d", selector.RangeSelector.MinCPU, k8sliceFlavor.Characteristics.Cpu)
-		return false
-	}
-
-	if selector.RangeSelector.MinMemory.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Memory.Cmp(selector.RangeSelector.MinMemory) < 0 {
-		klog.Infof("RangeSelector MinMemory: %d - Flavor Memory: %d", selector.RangeSelector.MinMemory, k8sliceFlavor.Characteristics.Memory)
-		return false
-	}
-
-	if selector.RangeSelector.MinPods.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Pods.Cmp(selector.RangeSelector.MinPods) < 0 {
-		klog.Infof("RangeSelector MinPods: %d - Flavor Pods: %d", selector.RangeSelector.MinPods, k8sliceFlavor.Characteristics.Pods)
-		return false
-	}
-
-	if selector.RangeSelector.MinStorage.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Storage.Cmp(selector.RangeSelector.MinStorage) < 0 {
-		klog.Infof("RangeSelector MinEph: %d - Flavor EphemeralStorage: %d", selector.RangeSelector.MinStorage, k8sliceFlavor.Characteristics.Storage)
-		return false
-	}
-
-	if selector.RangeSelector.MinGpu != nil && k8sliceFlavor.Characteristics.Gpu != nil {
-		if selector.RangeSelector.MinGpu.Cmp(*k8sliceFlavor.Characteristics.Gpu) > 0 {
-			klog.Infof("RangeSelector MinGpu: %d - Flavor Gpu: %d", selector.RangeSelector.MinGpu, k8sliceFlavor.Characteristics.Gpu)
-			return false
-		}
-	}
-
-	if selector.RangeSelector.MaxCPU.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Cpu.Cmp(selector.RangeSelector.MaxCPU) > 0 {
-		return false
-	}
-
-	if selector.RangeSelector.MaxMemory.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Memory.Cmp(selector.RangeSelector.MaxMemory) > 0 {
-		return false
-	}
-
-	if selector.RangeSelector.MaxPods.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Pods.Cmp(selector.RangeSelector.MaxPods) > 0 {
-		return false
-	}
-
-	if selector.RangeSelector.MaxStorage.CmpInt64(0) != 0 && k8sliceFlavor.Characteristics.Storage.Cmp(selector.RangeSelector.MaxStorage) > 0 {
-		return false
-	}
-
-	if selector.RangeSelector.MaxGpu != nil && k8sliceFlavor.Characteristics.Gpu != nil {
-		if selector.RangeSelector.MaxGpu.Cmp(*k8sliceFlavor.Characteristics.Gpu) < 0 {
-			klog.Infof("RangeSelector MaxGpu: %d - Flavor Gpu: %d", selector.RangeSelector.MaxGpu, k8sliceFlavor.Characteristics.Gpu)
-			return false
-		}
-	}
-
-	return true
 }
 
 // FilterPeeringCandidate filters the peering candidate based on the solver's flavor selector.
-func FilterPeeringCandidate(selector *nodecorev1alpha1.FlavorSelector, pc *advertisementv1alpha1.PeeringCandidate) bool {
+func FilterPeeringCandidate(selector *nodecorev1alpha1.Selector, pc *advertisementv1alpha1.PeeringCandidate) bool {
 	s := parseutil.ParseFlavorSelector(selector)
 	return FilterFlavor(s, &pc.Spec.Flavor)
 }
 
 // CheckSelector ia a func to check if the syntax of the Selector is right.
 // Strict and range syntax cannot be used together.
-func CheckSelector(selector *models.Selector) error {
-	if selector.MatchSelector != nil && selector.RangeSelector != nil {
-		return fmt.Errorf("selector syntax error: strict and range syntax cannot be used together")
+func CheckSelector(selector models.Selector) error {
+	// Parse the selector to check the syntax
+	switch selector.GetSelectorType() {
+	case models.K8SliceNameDefault:
+		k8sliceSelector := selector.(*models.K8SliceSelector)
+		klog.Infof("Checking K8Slice selector: %v", k8sliceSelector)
+		// Nothing is compulsory in the K8Slice selector
+		return nil
+	default:
+		return fmt.Errorf("selector type %s not supported", selector.GetSelectorType())
 	}
-	return nil
 }
 
 // SOLVER PHASE SETTERS

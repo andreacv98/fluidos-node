@@ -15,6 +15,8 @@
 package parseutil
 
 import (
+	"encoding/json"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
@@ -23,53 +25,176 @@ import (
 )
 
 // ParseFlavorSelector parses FlavorSelector into a Selector.
-func ParseFlavorSelector(selector *nodecorev1alpha1.FlavorSelector) *models.Selector {
-	s := &models.Selector{
-		FlavorType: selector.FlavorType,
+func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) models.Selector {
+	// Parse the Selector
+	selectorIdentifier, selectorStruct, err := nodecorev1alpha1.ParseSolverSelector(selector)
+	if err != nil {
+		return nil
 	}
 
-	if selector.MatchSelector != nil {
-		s.MatchSelector = &models.MatchSelector{
-			CPU:     selector.MatchSelector.CPU,
-			Memory:  selector.MatchSelector.Memory,
-			Pods:    selector.MatchSelector.Pods,
-			Storage: selector.MatchSelector.Storage,
-			Gpu: &models.GpuCharacteristics{
-				Model:  selector.MatchSelector.Gpu.Model,
-				Cores:  selector.MatchSelector.Gpu.Cores,
-				Memory: selector.MatchSelector.Gpu.Memory,
-			},
+	switch selectorIdentifier {
+	case nodecorev1alpha1.Type_K8Slice:
+		// Force casting of selectorStruct to K8Slice
+		selectorStruct := selectorStruct.(nodecorev1alpha1.K8SliceSelector)
+
+		// Generate the model for the K8Slice selector
+		k8SliceSelector := ParseK8SliceFilters(&selectorStruct)
+
+		return k8SliceSelector
+
+	case nodecorev1alpha1.Type_VM:
+		// Force casting of selectorStruct to VM
+		// TODO: Implement the parsing of the VM selector
+		return nil
+
+	case nodecorev1alpha1.Type_Service:
+		// Force casting of selectorStruct to Service
+		// TODO: Implement the parsing of the Service selector
+		return nil
+
+	}
+
+	return nil
+}
+
+func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.K8SliceSelector {
+
+	var cpuFilterModel, memoryFilterModel, podsFilterModel, storageFilterModel models.ResourceQuantityFilter
+
+	// Parse the CPU filter
+	if k8sSelector.CpuFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+		// Unmarshal the data into a ResourceMatchSelector
+		var cpuFilter nodecorev1alpha1.ResourceMatchSelector
+		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
+		if err != nil {
+			return nil
 		}
-	}
 
-	if selector.RangeSelector != nil {
-		s.RangeSelector = &models.RangeSelector{
-			MinCPU:     selector.RangeSelector.MinCpu,
-			MinMemory:  selector.RangeSelector.MinMemory,
-			MinPods:    selector.RangeSelector.MinPods,
-			MinStorage: selector.RangeSelector.MinStorage,
-			MinGpu: &models.GpuCharacteristics{
-				Model:  selector.RangeSelector.MinGpu.Model,
-				Cores:  selector.RangeSelector.MinGpu.Cores,
-				Memory: selector.RangeSelector.MinGpu.Memory,
-			},
-			MaxCPU:     selector.RangeSelector.MaxCpu,
-			MaxMemory:  selector.RangeSelector.MaxMemory,
-			MaxPods:    selector.RangeSelector.MaxPods,
-			MaxStorage: selector.RangeSelector.MaxStorage,
-			MaxGpu: &models.GpuCharacteristics{
-				Model:  selector.RangeSelector.MaxGpu.Model,
-				Cores:  selector.RangeSelector.MaxGpu.Cores,
-				Memory: selector.RangeSelector.MaxGpu.Memory,
-			},
+		// Generate the model for the CPU filter
+		cpuFilterModel = models.ResourceQuantityMatchFilter{
+			Value: cpuFilter.Value.DeepCopy(),
 		}
+	} else if k8sSelector.CpuFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+		// Unmarshal the data into a ResourceRangeSelector
+		var cpuFilter nodecorev1alpha1.ResourceRangeSelector
+		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the CPU filter
+		cpuFilterModel = models.ResourceQuantityRangeFilter{
+			Min: cpuFilter.Min.DeepCopy(),
+			Max: cpuFilter.Max.DeepCopy(),
+		}
+	} else {
+		return nil
 	}
 
-	return s
+	// Parse the Memory filter
+	if k8sSelector.MemoryFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+		// Unmarshal the data into a ResourceMatchSelector
+		var memoryFilter nodecorev1alpha1.ResourceMatchSelector
+		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Memory filter
+		memoryFilterModel = models.ResourceQuantityMatchFilter{
+			Value: memoryFilter.Value.DeepCopy(),
+		}
+	} else if k8sSelector.MemoryFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+		// Unmarshal the data into a ResourceRangeSelector
+		var memoryFilter nodecorev1alpha1.ResourceRangeSelector
+		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Memory filter
+		memoryFilterModel = models.ResourceQuantityRangeFilter{
+			Min: memoryFilter.Min.DeepCopy(),
+			Max: memoryFilter.Max.DeepCopy(),
+		}
+	} else {
+		return nil
+	}
+
+	// Parse the Pods filter
+	if k8sSelector.PodsFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+		// Unmarshal the data into a ResourceMatchSelector
+		var podsFilter nodecorev1alpha1.ResourceMatchSelector
+		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Pods filter
+		podsFilterModel = models.ResourceQuantityMatchFilter{
+			Value: podsFilter.Value.DeepCopy(),
+		}
+	} else if k8sSelector.PodsFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+		// Unmarshal the data into a ResourceRangeSelector
+		var podsFilter nodecorev1alpha1.ResourceRangeSelector
+		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Pods filter
+		podsFilterModel = models.ResourceQuantityRangeFilter{
+			Min: podsFilter.Min.DeepCopy(),
+			Max: podsFilter.Max.DeepCopy(),
+		}
+	} else {
+		return nil
+	}
+
+	// Parse the Storage filter
+	if k8sSelector.StorageFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+		// Unmarshal the data into a ResourceMatchSelector
+		var storageFilter nodecorev1alpha1.ResourceMatchSelector
+		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Storage filter
+		storageFilterModel = models.ResourceQuantityMatchFilter{
+			Value: storageFilter.Value.DeepCopy(),
+		}
+	} else if k8sSelector.StorageFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+		// Unmarshal the data into a ResourceRangeSelector
+		var storageFilter nodecorev1alpha1.ResourceRangeSelector
+		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
+		if err != nil {
+			return nil
+		}
+
+		// Generate the model for the Storage filter
+		storageFilterModel = models.ResourceQuantityRangeFilter{
+			Min: storageFilter.Min.DeepCopy(),
+			Max: storageFilter.Max.DeepCopy(),
+		}
+	} else {
+		return nil
+	}
+
+	// Generate the model for the K8Slice selector
+	k8SliceSelector := models.K8SliceSelector{
+		Cpu:     cpuFilterModel,
+		Memory:  memoryFilterModel,
+		Pods:    podsFilterModel,
+		Storage: storageFilterModel,
+	}
+
+	return &k8SliceSelector
+
 }
 
 // ParsePartition creates a Partition Object from a Partition CR.
-func ParsePartition(partition *nodecorev1alpha1.Partition) *models.Partition {
+func ParsePartition(partition *nodecorev1alpha1.K8SlicePartition) *models.Partition {
 	return &models.Partition{
 		CPU:     partition.CPU,
 		Memory:  partition.Memory,
@@ -84,8 +209,8 @@ func ParsePartition(partition *nodecorev1alpha1.Partition) *models.Partition {
 }
 
 // ParsePartitionFromObj creates a Partition CR from a Partition Object.
-func ParsePartitionFromObj(partition *models.Partition) *nodecorev1alpha1.Partition {
-	return &nodecorev1alpha1.Partition{
+func ParsePartitionFromObj(partition *models.Partition) *nodecorev1alpha1.K8SlicePartition {
+	return &nodecorev1alpha1.K8SlicePartition{
 		CPU:    partition.CPU,
 		Memory: partition.Memory,
 		Pods:   partition.Pods,

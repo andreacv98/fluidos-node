@@ -48,11 +48,11 @@ type NodeIdentity struct {
 	LiqoID string `json:"liqoID,omitempty"`
 }
 
-// Partition is the partition of the flavor.
-type Partition struct {
-	CPU     resource.Quantity `json:"cpu"`
-	Memory  resource.Quantity `json:"memory"`
-	Pods    resource.Quantity `json:"pods"`
+// K8SlicePartition is the partition of the flavor K8Slice.
+type K8SlicePartition struct {
+	CPU     resource.Quantity `json:"cpu,omitempty"`
+	Memory  resource.Quantity `json:"memory,omitempty"`
+	Pods    resource.Quantity `json:"pods,omitempty"`
 	Gpu     *GPU              `json:"gpu,omitempty"`
 	Storage resource.Quantity `json:"storage,omitempty"`
 }

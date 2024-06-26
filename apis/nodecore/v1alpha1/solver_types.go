@@ -33,16 +33,16 @@ type PhaseStatus struct {
 	EndTime        string `json:"endTime,omitempty"`
 }
 
-type SolverType struct {
-	SolverTypeIdentifier FlavorTypeIdentifier `json:"solverTypeIdentifier"`
-	SolverTypeData       runtime.RawExtension `json:"solverTypeData"`
+type Selector struct {
+	SelectorTypeIdentifier FlavorTypeIdentifier `json:"selectorTypeIdentifier"`
+	SelectorTypeData       runtime.RawExtension `json:"selectorTypeData"`
 }
 
 // SolverSpec defines the desired state of Solver
 type SolverSpec struct {
 
 	// Selector contains the flavor requirements for the solver.
-	SolverType *SolverType `json:"solverType,omitempty"`
+	Selector *Selector `json:"filter,omitempty"`
 
 	// IntentID is the ID of the intent that the Node Orchestrator is trying to solve.
 	// It is used to link the solver with the intent.
@@ -137,21 +137,24 @@ func init() {
 	SchemeBuilder.Register(&Solver{}, &SolverList{})
 }
 
-// ParseSolverType is a utility function that extracts the SolverTypeIdentifier and the SolverTypeData from the Solver.
-func ParseSolverType(s *Solver) (FlavorTypeIdentifier, interface{}, error) {
-	// TODO: Implement the function
-
+// ParseSolver is a utility function that extracts the SolverTypeIdentifier and the SolverTypeData from the Solver.
+func ParseSolverSelector(s *Selector) (FlavorTypeIdentifier, interface{}, error) {
 	var validationErr error
 
-	switch s.Spec.SolverType.SolverTypeIdentifier {
+	switch s.SelectorTypeIdentifier {
 
 	case Type_K8Slice:
-
-		var k8sliceFilter K8SliceFilter
-		validationErr = json.Unmarshal(s.Spec.SolverType.SolverTypeData.Raw, &k8sliceFilter)
+		var k8sliceFilter K8SliceSelector
+		validationErr = json.Unmarshal(s.SelectorTypeData.Raw, &k8sliceFilter)
 		return Type_K8Slice, k8sliceFilter, validationErr
+	case Type_VM:
+		// TODO: Implement the function
+		return "", nil, fmt.Errorf("solver type %s not supported", s.SelectorTypeIdentifier)
+	case Type_Service:
+		// TODO: Implement the function
+		return "", nil, fmt.Errorf("solver type %s not supported", s.SelectorTypeIdentifier)
 	default:
-		return "", nil, fmt.Errorf("solver type %s not supported", s.Spec.SolverType.SolverTypeIdentifier)
+		return "", nil, fmt.Errorf("solver type %s not supported", s.SelectorTypeIdentifier)
 
 	}
 }

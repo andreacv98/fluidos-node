@@ -51,20 +51,23 @@ func (r *Solver) ValidateCreate() (admission.Warnings, error) {
 	solverlog.Info("VALIDATE CREATE WEBHOOK")
 	solverlog.Info("validate create", "name", r.Name)
 
-	// Validate creation of Solver checking SolverType->TypeIdenfier matches the struct inside the SolverType->TypeData
-	typeIdenfier, _, err := ParseSolverType(r)
+	if r.Spec.Selector == nil {
+		return nil, nil
+	}
+	// Validate creation of Solver checking SolverType->typeIdentifier matches the struct inside the SolverType->TypeData
+	typeIdentifier, _, err := ParseSolverSelector(r.Spec.Selector)
 	if err != nil {
 		return nil, err
 	}
-	switch typeIdenfier {
+	switch typeIdentifier {
 	case Type_K8Slice:
-		solverlog.Info("SolverTypeIdentifier is K8Slice")
+		solverlog.Info("Selector Type Identifier is K8Slice")
 	case Type_VM:
-		solverlog.Info("SolverTypeIdentifier is VM")
+		solverlog.Info("Selector Type Identifier is VM")
 	case Type_Service:
-		solverlog.Info("SolverTypeIdentifier is Service")
+		solverlog.Info("Selector Type Identifier is Service")
 	default:
-		solverlog.Info("SolverTypeIdentifier is not valid")
+		solverlog.Info("Selector Type Identifier is not valid")
 	}
 
 	return nil, nil
@@ -75,20 +78,23 @@ func (r *Solver) ValidateUpdate(old runtime.Object) (admission.Warnings, error) 
 	solverlog.Info("VALIDATE UPDATE WEBHOOK")
 	solverlog.Info("validate update", "name", r.Name)
 
-	// Validate creation of Solver checking SolverType->TypeIdenfier matches the struct inside the SolverType->TypeData
-	typeIdenfier, _, err := ParseSolverType(r)
+	if r.Spec.Selector == nil {
+		return nil, nil
+	}
+	// Validate creation of Solver checking SolverType->typeIdentifier matches the struct inside the SolverType->TypeData
+	typeIdentifier, _, err := ParseSolverSelector(r.Spec.Selector)
 	if err != nil {
 		return nil, err
 	}
-	switch typeIdenfier {
+	switch typeIdentifier {
 	case Type_K8Slice:
-		solverlog.Info("SolverTypeIdentifier is K8Slice")
+		solverlog.Info("Selector Type Identifier is K8Slice")
 	case Type_VM:
-		solverlog.Info("SolverTypeIdentifier is VM")
+		solverlog.Info("Selector Type Identifier is VM")
 	case Type_Service:
-		solverlog.Info("SolverTypeIdentifier is Service")
+		solverlog.Info("Selector Type Identifier is Service")
 	default:
-		solverlog.Info("SolverTypeIdentifier is not valid")
+		solverlog.Info("Selector Type Identifier is not valid")
 	}
 
 	return nil, nil
