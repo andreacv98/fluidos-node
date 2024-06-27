@@ -16,6 +16,7 @@ package parseutil
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/resource"
 
@@ -25,11 +26,11 @@ import (
 )
 
 // ParseFlavorSelector parses FlavorSelector into a Selector.
-func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) models.Selector {
+func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) (models.Selector, error) {
 	// Parse the Selector
 	selectorIdentifier, selectorStruct, err := nodecorev1alpha1.ParseSolverSelector(selector)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
 	switch selectorIdentifier {
@@ -38,48 +39,52 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) models.Selector {
 		selectorStruct := selectorStruct.(nodecorev1alpha1.K8SliceSelector)
 
 		// Generate the model for the K8Slice selector
-		k8SliceSelector := ParseK8SliceFilters(&selectorStruct)
+		k8SliceSelector, err := ParseK8SliceFilters(&selectorStruct)
+		if err != nil {
+			return nil, err
+		}
 
-		return k8SliceSelector
+		return k8SliceSelector, nil
 
 	case nodecorev1alpha1.Type_VM:
 		// Force casting of selectorStruct to VM
 		// TODO: Implement the parsing of the VM selector
-		return nil
+		return nil, fmt.Errorf("VM selector not implemented")
 
 	case nodecorev1alpha1.Type_Service:
 		// Force casting of selectorStruct to Service
 		// TODO: Implement the parsing of the Service selector
-		return nil
+		return nil, fmt.Errorf("service selector not implemented")
+
+	default:
+		return nil, fmt.Errorf("unknown selector type")
 
 	}
-
-	return nil
 }
-
-func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.K8SliceSelector {
+func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models.K8SliceSelector, error) {
 
 	var cpuFilterModel, memoryFilterModel, podsFilterModel, storageFilterModel models.ResourceQuantityFilter
 
 	// Parse the CPU filter
-	if k8sSelector.CpuFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+	switch k8sSelector.CpuFilter.FilterType {
+	case nodecorev1alpha1.TypeMatchFilter:
 		// Unmarshal the data into a ResourceMatchSelector
 		var cpuFilter nodecorev1alpha1.ResourceMatchSelector
 		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the CPU filter
 		cpuFilterModel = models.ResourceQuantityMatchFilter{
 			Value: cpuFilter.Value.DeepCopy(),
 		}
-	} else if k8sSelector.CpuFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+	case nodecorev1alpha1.TypeRangeFilter:
 		// Unmarshal the data into a ResourceRangeSelector
 		var cpuFilter nodecorev1alpha1.ResourceRangeSelector
 		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the CPU filter
@@ -87,29 +92,30 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.
 			Min: cpuFilter.Min.DeepCopy(),
 			Max: cpuFilter.Max.DeepCopy(),
 		}
-	} else {
-		return nil
+	default:
+		return nil, fmt.Errorf("unknown filter type")
 	}
 
 	// Parse the Memory filter
-	if k8sSelector.MemoryFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+	switch k8sSelector.MemoryFilter.FilterType {
+	case nodecorev1alpha1.TypeMatchFilter:
 		// Unmarshal the data into a ResourceMatchSelector
 		var memoryFilter nodecorev1alpha1.ResourceMatchSelector
 		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Memory filter
 		memoryFilterModel = models.ResourceQuantityMatchFilter{
 			Value: memoryFilter.Value.DeepCopy(),
 		}
-	} else if k8sSelector.MemoryFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+	case nodecorev1alpha1.TypeRangeFilter:
 		// Unmarshal the data into a ResourceRangeSelector
 		var memoryFilter nodecorev1alpha1.ResourceRangeSelector
 		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Memory filter
@@ -117,29 +123,30 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.
 			Min: memoryFilter.Min.DeepCopy(),
 			Max: memoryFilter.Max.DeepCopy(),
 		}
-	} else {
-		return nil
+	default:
+		return nil, fmt.Errorf("unknown filter type")
 	}
 
 	// Parse the Pods filter
-	if k8sSelector.PodsFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+	switch k8sSelector.PodsFilter.FilterType {
+	case nodecorev1alpha1.TypeMatchFilter:
 		// Unmarshal the data into a ResourceMatchSelector
 		var podsFilter nodecorev1alpha1.ResourceMatchSelector
 		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Pods filter
 		podsFilterModel = models.ResourceQuantityMatchFilter{
 			Value: podsFilter.Value.DeepCopy(),
 		}
-	} else if k8sSelector.PodsFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+	case nodecorev1alpha1.TypeRangeFilter:
 		// Unmarshal the data into a ResourceRangeSelector
 		var podsFilter nodecorev1alpha1.ResourceRangeSelector
 		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Pods filter
@@ -147,29 +154,30 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.
 			Min: podsFilter.Min.DeepCopy(),
 			Max: podsFilter.Max.DeepCopy(),
 		}
-	} else {
-		return nil
+	default:
+		return nil, fmt.Errorf("unknown filter type")
 	}
 
 	// Parse the Storage filter
-	if k8sSelector.StorageFilter.FilterType == nodecorev1alpha1.TypeMatchFilter {
+	switch k8sSelector.StorageFilter.FilterType {
+	case nodecorev1alpha1.TypeMatchFilter:
 		// Unmarshal the data into a ResourceMatchSelector
 		var storageFilter nodecorev1alpha1.ResourceMatchSelector
 		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Storage filter
 		storageFilterModel = models.ResourceQuantityMatchFilter{
 			Value: storageFilter.Value.DeepCopy(),
 		}
-	} else if k8sSelector.StorageFilter.FilterType == nodecorev1alpha1.TypeRangeFilter {
+	case nodecorev1alpha1.TypeRangeFilter:
 		// Unmarshal the data into a ResourceRangeSelector
 		var storageFilter nodecorev1alpha1.ResourceRangeSelector
 		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
 		if err != nil {
-			return nil
+			return nil, err
 		}
 
 		// Generate the model for the Storage filter
@@ -177,8 +185,8 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.
 			Min: storageFilter.Min.DeepCopy(),
 			Max: storageFilter.Max.DeepCopy(),
 		}
-	} else {
-		return nil
+	default:
+		return nil, fmt.Errorf("unknown filter type")
 	}
 
 	// Generate the model for the K8Slice selector
@@ -189,7 +197,7 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) *models.
 		Storage: storageFilterModel,
 	}
 
-	return &k8SliceSelector
+	return &k8SliceSelector, nil
 
 }
 

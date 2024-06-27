@@ -484,8 +484,7 @@ func (r *SolverReconciler) handlePeering(ctx context.Context, req ctrl.Request, 
 	}
 }
 
-func (r *SolverReconciler) searchPeeringCandidates(ctx context.Context,
-	solver *nodecorev1alpha1.Solver) ([]advertisementv1alpha1.PeeringCandidate, error) {
+func (r *SolverReconciler) searchPeeringCandidates(ctx context.Context, solver *nodecorev1alpha1.Solver) ([]advertisementv1alpha1.PeeringCandidate, error) {
 	pc := advertisementv1alpha1.PeeringCandidateList{}
 	result := []advertisementv1alpha1.PeeringCandidate{}
 

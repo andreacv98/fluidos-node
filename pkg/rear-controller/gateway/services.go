@@ -33,21 +33,28 @@ func searchFlavorWithSelector(ctx context.Context, selector models.Selector, add
 
 	var url string
 
+	v, err := selectorToQueryParams(selector)
+	if err != nil {
+		return nil, err
+	}
+
+	// Differentiate the URL request based on the selector type
 	switch selector.GetSelectorType() {
+
 	case models.K8SliceNameDefault:
 		url = fmt.Sprintf("http://%s%s", addr, Routes.K8SliceFlavors)
-
-		v, err := selectorToQueryParams(selector)
-		if err != nil {
-			return nil, err
-		}
-		url += "?" + v
-		klog.Infof("URL: %s", url)
+		// Convert the selector to query parameters
 	// TODO: Implement the other selector types
+	
 	default:
 		return nil, fmt.Errorf("unsupported selector type")
 	}
 
+	// Append the query parameters to the URL
+	url += "?" + v
+	klog.Infof("URL: %s", url)
+
+	// Make the request
 	resp, err := makeRequest(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, err

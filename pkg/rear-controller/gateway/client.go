@@ -174,12 +174,15 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 	var flavorsCR []*nodecorev1alpha1.Flavor
 
 	if selector != nil {
-		s = parseutil.ParseFlavorSelector(selector)
+		s, err = parseutil.ParseFlavorSelector(selector)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	providers := getters.GetLocalProviders(context.Background(), g.client)
 
-	// Send the POST request to all the servers in the list
+	// Send the GET request to all the servers in the list
 	for _, provider := range providers {
 		flavors, err := discover(ctx, s, provider)
 		if err != nil {
