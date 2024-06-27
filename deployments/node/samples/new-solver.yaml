@@ -1,0 +1,27 @@
+apiVersion: nodecore.fluidos.eu/v1alpha1
+kind: Solver
+metadata:
+  name: solver-sample
+  namespace: fluidos
+spec:
+  # This is the Selector used to find a Flavor (FLUIDOS node) that matches the requirements
+  selector:
+    selectorTypeIdentifier: K8Slice
+    selectorTypeData:
+      cpuFilter:
+        filterType: Match
+        data:
+          value: "1000m"
+      memoryFilter:
+        filterType: Range
+        data:
+          min: "1Gi"
+          max: "10Gi"
+
+  intentID: "intent-sample"
+  # This flag is used to indicate that the solver should find a candidate (FLUIDOS node)
+  findCandidate: true
+  # This flag is used to indicate that the solver should reserve and buy the resources from the candidate (FLUIDOS node)
+  reserveAndBuy: false
+  # This flag is used to indicate that the solver should establish peering with the candidate (FLUIDOS node)
+  enstablishPeering: false
