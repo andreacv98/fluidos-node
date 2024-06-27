@@ -3,13 +3,13 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: {{ include "fluidos.prefixedName" $resManagerConfig }}
+  name: {{ include "fluidos.prefixedName" $rearManagerConfig }}
   namespace: {{ .Release.Namespace }}
 spec:
   dnsNames:
-  - {{ include "fluidos.prefixedName" $resManagerConfig }}.{{ .Release.Namespace }}.svc
-  - {{ include "fluidos.prefixedName" $resManagerConfig }}.{{ .Release.Namespace }}.svc.cluster.local
+  - {{ include "fluidos.prefixedName" $rearManagerConfig }}.{{ .Release.Namespace }}.svc
+  - {{ include "fluidos.prefixedName" $rearManagerConfig }}.{{ .Release.Namespace }}.svc.cluster.local
   issuerRef:
     kind: Issuer
     name: {{ .Values.webhook.Issuer | default "self-signed" }}
-  secretName: {{ include "fluidos.prefixedName" $resManagerConfig }}
+  secretName: {{ include "fluidos.prefixedName" $rearManagerConfig }}

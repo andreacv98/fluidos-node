@@ -42,7 +42,7 @@ type Selector struct {
 type SolverSpec struct {
 
 	// Selector contains the flavor requirements for the solver.
-	Selector *Selector `json:"filter,omitempty"`
+	Selector *Selector `json:"selector,omitempty"`
 
 	// IntentID is the ID of the intent that the Node Orchestrator is trying to solve.
 	// It is used to link the solver with the intent.

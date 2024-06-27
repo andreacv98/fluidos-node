@@ -47,7 +47,6 @@ spec:
         command: ["/usr/bin/rear-manager"]
         args:
           - --enable-webhooks={{ .Values.webhook.enabled | default "true" }}
-          - --enable-auto-discovery={{ .Values.localResourceManager.config.enableAutoDiscovery | default "true" }}
         resources: {{- toYaml .Values.rearManager.pod.resources | nindent 10 }}
         ports:
         - name: healthz
@@ -66,7 +65,7 @@ spec:
       volumes:
       - name: webhook-certs
         secret:
-          secretName: {{ include "fluidos.prefixedName" $resManagerConfig }}
+          secretName: {{ include "fluidos.prefixedName" $rearManagerConfig }}
       {{- if ((.Values.common).nodeSelector) }}
       nodeSelector:
       {{- toYaml .Values.common.nodeSelector | nindent 8 }}
