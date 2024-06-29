@@ -79,18 +79,6 @@ spec:
                 description: EnstablishPeering is a flag that indicates if the solver
                   should enstablish a peering with the candidate.
                 type: boolean
-              filter:
-                description: Selector contains the flavor requirements for the solver.
-                properties:
-                  selectorTypeData:
-                    type: object
-                    x-kubernetes-preserve-unknown-fields: true
-                  selectorTypeIdentifier:
-                    type: string
-                required:
-                - selectorTypeData
-                - selectorTypeIdentifier
-                type: object
               findCandidate:
                 description: FindCandidate is a flag that indicates if the solver
                   should find a candidate to solve the intent.
@@ -104,6 +92,18 @@ spec:
                 description: ReserveAndBuy is a flag that indicates if the solver
                   should reserve and buy the resources on the candidate.
                 type: boolean
+              selector:
+                description: Selector contains the flavor requirements for the solver.
+                properties:
+                  selectorTypeData:
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  selectorTypeIdentifier:
+                    type: string
+                required:
+                - selectorTypeData
+                - selectorTypeIdentifier
+                type: object
             required:
             - intentID
             type: object

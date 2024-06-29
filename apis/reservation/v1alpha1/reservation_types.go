@@ -33,7 +33,7 @@ type ReservationSpec struct {
 	Seller nodecorev1alpha1.NodeIdentity `json:"seller"`
 
 	// Parition is the partition of the flavour that is being reserved
-	Partition *nodecorev1alpha1.K8SlicePartition `json:"partition,omitempty"`
+	Partition *nodecorev1alpha1.Partition `json:"partition,omitempty"`
 
 	// Reserve indicates if the reservation is a reserve or not
 	Reserve bool `json:"reserve,omitempty"`

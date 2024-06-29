@@ -14,7 +14,12 @@
 
 package v1alpha1
 
-import "k8s.io/apimachinery/pkg/api/resource"
+import (
+	"encoding/json"
+	"fmt"
+
+	"k8s.io/apimachinery/pkg/runtime"
+)
 
 // Set of constants for the phases of the FLUIDOS Node modules.
 const (
@@ -48,13 +53,11 @@ type NodeIdentity struct {
 	LiqoID string `json:"liqoID,omitempty"`
 }
 
-// K8SlicePartition is the partition of the flavor K8Slice.
-type K8SlicePartition struct {
-	CPU     resource.Quantity `json:"cpu,omitempty"`
-	Memory  resource.Quantity `json:"memory,omitempty"`
-	Pods    resource.Quantity `json:"pods,omitempty"`
-	Gpu     *GPU              `json:"gpu,omitempty"`
-	Storage resource.Quantity `json:"storage,omitempty"`
+type Partition struct {
+	// Identifier is the identifier of the partition.
+	PartitionTypeIdentifier FlavorTypeIdentifier `json:"partitionTypeIdentifier"`
+	// PartitionData is the data of the partition.
+	PartitionData runtime.RawExtension `json:"partitionData"`
 }
 
 // LiqoCredentials contains the credentials of a Liqo cluster to enstablish a peering.
@@ -63,4 +66,20 @@ type LiqoCredentials struct {
 	ClusterName string `json:"clusterName"`
 	Token       string `json:"token"`
 	Endpoint    string `json:"endpoint"`
+}
+
+// ParsePartition parses the partition data into the correct type.
+// Returns the FlavorTypeIdentifier, aka the PartitionTypeIdentifier and the partition data.
+func ParsePartition(p *Partition) (FlavorTypeIdentifier, interface{}, error) {
+	var validationError error
+
+	switch p.PartitionTypeIdentifier {
+	case Type_K8Slice:
+		var partition K8SlicePartition
+		validationError = json.Unmarshal(p.PartitionData.Raw, &partition)
+		return Type_K8Slice, partition, validationError
+	// TODO: implement other type of partition (if any)
+	default:
+		return "", nil, fmt.Errorf("partition type %s not supported", p.PartitionTypeIdentifier)
+	}
 }

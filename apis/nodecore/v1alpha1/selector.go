@@ -49,8 +49,8 @@ type ResourceMatchSelector struct {
 }
 
 type ResourceRangeSelector struct {
-	Min resource.Quantity `json:"min"`
-	Max resource.Quantity `json:"max"`
+	Min *resource.Quantity `json:"min,omitempty"`
+	Max *resource.Quantity `json:"max,omitempty"`
 }
 
 // ParseResourceQuantityFilter parses a ResourceQuantityFilter into a FilterType and the corresponding filter data.
@@ -67,6 +67,17 @@ func ParseResourceQuantityFilter(rqf *ResourceQuantityFilter) (FilterType, inter
 		// Unmarshal the data into a ResourceRangeSelector
 		var rrs ResourceRangeSelector
 		validationErr = json.Unmarshal(rqf.Data.Raw, &rrs)
+		// Check that at least one of min or max is set
+		if rrs.Min == nil && rrs.Max == nil {
+			validationErr = fmt.Errorf("at least one of min or max must be set")
+		} else
+		// If both min and max are set, check that min is less than max
+		if rrs.Min != nil && rrs.Max != nil {
+			// Check that the min is less than the max
+			if rrs.Min != nil && rrs.Max != nil && rrs.Min.Cmp(*rrs.Max) > 0 {
+				validationErr = fmt.Errorf("min value %s is greater than max value %s", rrs.Min.String(), rrs.Max.String())
+			}
+		}
 		return TypeRangeFilter, rrs, validationErr
 	default:
 		return "", nil, fmt.Errorf("unknown filter type %s", rqf.FilterType)

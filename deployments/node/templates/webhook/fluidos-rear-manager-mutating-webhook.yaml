@@ -1,4 +1,5 @@
-{{- $rearControllerConfig := (merge (dict "name" "rear-controller" "module" "rear-controller") .) -}}
+{{- $rearManagerConfig := (merge (dict "name" "rear-manager" "module" "rear-manager") .) -}}
+
 apiVersion: admissionregistration.k8s.io/v1
 kind: MutatingWebhookConfiguration
 metadata:
@@ -12,9 +13,9 @@ webhooks:
     service:
       name: {{ include "fluidos.prefixedName" $rearManagerConfig }}
       namespace: {{ .Release.Namespace }}
-      path: /mutate-nodecore-fluidos-eu-v1alpha1-reservation
+      path: /mutate-nodecore-fluidos-eu-v1alpha1-solver
   failurePolicy: Fail
-  name: mutate.reservation.nodecore.fluidos.eu
+  name: mutate.solver.nodecore.fluidos.eu
   rules:
   - apiGroups:
     - nodecore.fluidos.eu
@@ -24,5 +25,5 @@ webhooks:
     - CREATE
     - UPDATE
     resources:
-    - reservations
+    - solvers
   sideEffects: None
