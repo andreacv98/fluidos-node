@@ -42,11 +42,11 @@ func (gpu GpuCharacteristics) Cmp(other nodecorev1alpha1.GPU) int {
 
 // K8SliceCharacteristics represents the characteristics of a Kubernetes slice.
 type K8SliceCharacteristics struct {
-	Cpu     resource.Quantity  `json:"cpu"`
-	Memory  resource.Quantity  `json:"memory"`
-	Pods    resource.Quantity  `json:"pods"`
-	Gpu     GpuCharacteristics `json:"gpu,omitempty"`
-	Storage resource.Quantity  `json:"storage,omitempty"`
+	Cpu     resource.Quantity   `json:"cpu"`
+	Memory  resource.Quantity   `json:"memory"`
+	Pods    resource.Quantity   `json:"pods"`
+	Gpu     *GpuCharacteristics `json:"gpu,omitempty"`
+	Storage *resource.Quantity  `json:"storage,omitempty"`
 }
 
 // K8SliceProperties represents the properties of a Kubernetes slice.
@@ -73,7 +73,6 @@ type K8SlicePolicies struct {
 
 // K8Slice represents a Kubernetes slice.
 type K8Slice struct {
-	Name            FlavorTypeName         `json:"name"`
 	Characteristics K8SliceCharacteristics `json:"charateristics"`
 	Properties      K8SliceProperties      `json:"properties"`
 	Policies        K8SlicePolicies        `json:"policies"`

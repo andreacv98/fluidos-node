@@ -148,6 +148,14 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
 			os.Exit(1)
 		}
+		if err = (&reservationv1alpha1.Contract{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Contract")
+			os.Exit(1)
+		}
+		if err = (&reservationv1alpha1.Transaction{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Transaction")
+			os.Exit(1)
+		}
 	} else {
 		setupLog.Info("Webhooks are disabled")
 	}

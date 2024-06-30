@@ -15,6 +15,7 @@
 package models
 
 import (
+	"encoding/json"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -34,7 +35,12 @@ type Flavor struct {
 }
 
 // FlavorType represents the type of a Flavor.
-type FlavorType interface {
+type FlavorType struct {
+	Name FlavorTypeName  `json:"name"`
+	Data json.RawMessage `json:"data"`
+}
+
+type FlavorTypeData interface {
 	GetFlavorTypeName() FlavorTypeName
 }
 

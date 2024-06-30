@@ -15,17 +15,31 @@
 package models
 
 import (
+	"encoding/json"
+
 	"k8s.io/apimachinery/pkg/api/resource"
 )
 
 // Partition represents the partitioning properties of a Flavor.
 type Partition struct {
-	CPU              resource.Quantity  `json:"cpu"`
-	Memory           resource.Quantity  `json:"memory"`
-	Pods             resource.Quantity  `json:"pods"`
-	EphemeralStorage resource.Quantity  `json:"ephemeral-storage,omitempty"`
-	Gpu              GpuCharacteristics `json:"gpu,omitempty"`
-	Storage          resource.Quantity  `json:"storage,omitempty"`
+	Name FlavorTypeName  `json:"name"`
+	Data json.RawMessage `json:"data"`
+}
+
+type PartitionData interface {
+	GetPartitionType() FlavorTypeName
+}
+
+type K8SlicePartition struct {
+	CPU     resource.Quantity   `json:"cpu"`
+	Memory  resource.Quantity   `json:"memory"`
+	Pods    resource.Quantity   `json:"pods"`
+	Gpu     *GpuCharacteristics `json:"gpu,omitempty"`
+	Storage *resource.Quantity  `json:"storage,omitempty"`
+}
+
+func (p K8SlicePartition) GetPartitionType() FlavorTypeName {
+	return K8SliceNameDefault
 }
 
 // Transaction contains information regarding the transaction for a flavor.

@@ -326,7 +326,11 @@ func (r *ReservationReconciler) handlePurchase(ctx context.Context,
 		klog.Infof("Purchase completed with status %s", resPurchase.Status)
 
 		// Create a contract CR now that the reservation is solved
-		contract := resourceforge.ForgeContractFromObj(&resPurchase.Contract)
+		contract, err := resourceforge.ForgeContractFromObj(&resPurchase.Contract)
+		if err != nil {
+			klog.Errorf("Error when forging Contract %s: %s", contract.Name, err)
+			return ctrl.Result{}, err
+		}
 		err = r.Create(ctx, contract)
 		if errors.IsAlreadyExists(err) {
 			klog.Errorf("Error when creating Contract %s: %s", contract.Name, err)

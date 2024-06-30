@@ -56,17 +56,14 @@ func (g *Gateway) ReserveFlavor(ctx context.Context, reservation *reservationv1a
 		ClusterID: liqoCredentials.ClusterID,
 		Partition: func() *models.Partition {
 			if reservation.Spec.Partition != nil {
-				return parseutil.ParsePartition(reservation.Spec.Partition)
+				partition := parseutil.ParsePartition(reservation.Spec.Partition)
+				return partition
 			}
 			return nil
 		}(),
 	}
 
 	klog.Infof("Reservation %s for flavor %s", reservation.Name, flavorID)
-
-	if reservation.Spec.Partition != nil {
-		body.Partition = parseutil.ParsePartition(reservation.Spec.Partition)
-	}
 
 	selectorBytes, err := json.Marshal(body)
 	if err != nil {
@@ -175,6 +172,7 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 
 	if selector != nil {
 		s, err = parseutil.ParseFlavorSelector(selector)
+		klog.Infof("Selector parsed: %v", s)
 		if err != nil {
 			return nil, err
 		}

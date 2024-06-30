@@ -19,6 +19,7 @@ import (
 	"fmt"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+	"k8s.io/klog/v2"
 
 	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
 	reservationv1alpha1 "github.com/fluidos-project/node/apis/reservation/v1alpha1"
@@ -39,12 +40,12 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) (models.Selector, 
 		selectorStruct := selectorStruct.(nodecorev1alpha1.K8SliceSelector)
 
 		// Generate the model for the K8Slice selector
-		k8SliceSelector, err := ParseK8SliceFilters(&selectorStruct)
+		k8SliceSelector, err := parseK8SliceFilters(&selectorStruct)
 		if err != nil {
 			return nil, err
 		}
 
-		return k8SliceSelector, nil
+		return *k8SliceSelector, nil
 
 	case nodecorev1alpha1.Type_VM:
 		// Force casting of selectorStruct to VM
@@ -61,7 +62,8 @@ func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) (models.Selector, 
 
 	}
 }
-func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models.K8SliceSelector, error) {
+
+func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models.K8SliceSelector, error) {
 
 	var cpuFilterModel, memoryFilterModel, podsFilterModel, storageFilterModel models.ResourceQuantityFilter
 
@@ -198,36 +200,49 @@ func ParseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 	}
 
 	return &k8SliceSelector, nil
-
 }
 
 // ParsePartition creates a Partition Object from a Partition CR.
-func ParsePartition(partition *nodecorev1alpha1.K8SlicePartition) *models.Partition {
-	return &models.Partition{
-		CPU:     partition.CPU,
-		Memory:  partition.Memory,
-		Pods:    partition.Pods,
-		Storage: partition.Storage,
-		Gpu: models.GpuCharacteristics{
-			Model:  partition.Gpu.Model,
-			Cores:  partition.Gpu.Cores,
-			Memory: partition.Gpu.Memory,
-		},
+func ParsePartition(partition *nodecorev1alpha1.Partition) *models.Partition {
+	// Parse the Partition
+	partitionType, partitionStruct, err := nodecorev1alpha1.ParsePartition(partition)
+	if err != nil {
+		return nil
 	}
-}
 
-// ParsePartitionFromObj creates a Partition CR from a Partition Object.
-func ParsePartitionFromObj(partition *models.Partition) *nodecorev1alpha1.K8SlicePartition {
-	return &nodecorev1alpha1.K8SlicePartition{
-		CPU:    partition.CPU,
-		Memory: partition.Memory,
-		Pods:   partition.Pods,
-		Gpu: &nodecorev1alpha1.GPU{
-			Model:  partition.Gpu.Model,
-			Cores:  partition.Gpu.Cores,
-			Memory: partition.Gpu.Memory,
-		},
-		Storage: partition.Storage,
+	switch partitionType {
+	case nodecorev1alpha1.Type_K8Slice:
+		// Force casting of partitionStruct to K8Slice
+		partitionStruct := partitionStruct.(nodecorev1alpha1.K8SlicePartition)
+		k8slicePartitionJSON := models.K8SlicePartition{
+			CPU:    partitionStruct.CPU,
+			Memory: partitionStruct.Memory,
+			Pods:   partitionStruct.Pods,
+			Gpu: func() *models.GpuCharacteristics {
+				if partitionStruct.Gpu != nil {
+					return &models.GpuCharacteristics{
+						Model:  partitionStruct.Gpu.Model,
+						Cores:  partitionStruct.Gpu.Cores,
+						Memory: partitionStruct.Gpu.Memory,
+					}
+				}
+				return nil
+			}(),
+			Storage: partitionStruct.Storage,
+		}
+		// Marshal the K8Slice partition to JSON
+		partitionData, err := json.Marshal(k8slicePartitionJSON)
+		if err != nil {
+			klog.Errorf("Error marshalling the K8Slice partition: %s", err)
+			return nil
+		}
+		return &models.Partition{
+			Name: models.K8SliceNameDefault,
+			Data: partitionData,
+		}
+		// TODO: Implement the other partition types, if any
+	default:
+		return nil
 	}
 }
 
@@ -256,17 +271,21 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 	case nodecorev1alpha1.Type_K8Slice:
 		// Force casting of flavorTypeStruct to K8Slice
 		flavorTypeStruct := flavorTypeStruct.(nodecorev1alpha1.K8Slice)
-		modelFlavorType = models.K8Slice{
-			Name: models.K8SliceNameDefault,
+		modelFlavorTypeData := models.K8Slice{
 			Characteristics: models.K8SliceCharacteristics{
 				Cpu:    flavorTypeStruct.Characteristics.Cpu,
 				Memory: flavorTypeStruct.Characteristics.Memory,
 				Pods:   flavorTypeStruct.Characteristics.Pods,
-				Gpu: models.GpuCharacteristics{
-					Model:  flavorTypeStruct.Characteristics.Gpu.Model,
-					Cores:  flavorTypeStruct.Characteristics.Gpu.Cores,
-					Memory: flavorTypeStruct.Characteristics.Gpu.Memory,
-				},
+				Gpu: func() *models.GpuCharacteristics {
+					if flavorTypeStruct.Characteristics.Gpu != nil {
+						return &models.GpuCharacteristics{
+							Model:  flavorTypeStruct.Characteristics.Gpu.Model,
+							Cores:  flavorTypeStruct.Characteristics.Gpu.Cores,
+							Memory: flavorTypeStruct.Characteristics.Gpu.Memory,
+						}
+					}
+					return nil
+				}(),
 				Storage: flavorTypeStruct.Characteristics.Storage,
 			},
 			Properties: models.K8SliceProperties{
@@ -287,6 +306,18 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 					PodsStep:   flavorTypeStruct.Policies.Partitionability.PodsStep,
 				},
 			},
+		}
+
+		// Encode the K8Slice data into JSON
+		encodedFlavorTypeData, err := json.Marshal(modelFlavorTypeData)
+		if err != nil {
+			klog.Errorf("Error encoding the K8Slice data: %s", err)
+			return nil
+		}
+
+		modelFlavorType = models.FlavorType{
+			Name: models.K8SliceNameDefault,
+			Data: encodedFlavorTypeData,
 		}
 	}
 
@@ -325,7 +356,8 @@ func ParseContract(contract *reservationv1alpha1.Contract) *models.Contract {
 		TransactionID:  contract.Spec.TransactionID,
 		Partition: func() *models.Partition {
 			if contract.Spec.Partition != nil {
-				return ParsePartition(contract.Spec.Partition)
+				partition := ParsePartition(contract.Spec.Partition)
+				return partition
 			}
 			return nil
 		}(),

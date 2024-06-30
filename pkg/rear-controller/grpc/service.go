@@ -49,26 +49,45 @@ func getContractResourcesByClusterID(cl client.Client, clusterID string) (map[st
 
 	contract := contracts.Items[0]
 
-	return mapQuantityToResourceList(contract.Spec.Partition), nil
+	return addResources(make(map[string]*resource.Quantity), contract.Spec.Partition), nil
 }
 
 func multipleContractLogic(contracts []reservationv1alpha1.Contract) map[string]*resource.Quantity {
 	resources := make(map[string]*resource.Quantity)
 	for i := range contracts {
-		resources = addResources(resources, contracts[i].Spec.Partition)
+		if contracts[i].Spec.Partition != nil {
+			resources = addResources(resources, contracts[i].Spec.Partition)
+		} else {
+			klog.Errorf("Contract %s has no partition", contracts[i].Name)
+		}
+
 	}
 	return resources
 }
 
 // This function adds the resources of a contract to the existing resourceList.
-func addResources(resources map[string]*resource.Quantity, partition *nodecorev1alpha1.K8SlicePartition) map[string]*resource.Quantity {
-	for key, value := range mapQuantityToResourceList(partition) {
-		if prevRes, ok := resources[key]; !ok {
-			resources[key] = value
-		} else {
-			prevRes.Add(*value)
-			resources[key] = prevRes
+func addResources(resources map[string]*resource.Quantity, partition *nodecorev1alpha1.Partition) map[string]*resource.Quantity {
+
+	// Parse partition
+	partitionType, paritionData, err := nodecorev1alpha1.ParsePartition(partition)
+	if err != nil {
+		klog.Errorf("Error when parsing partition: %s", err)
+		return nil
+	}
+	switch partitionType {
+	case nodecorev1alpha1.Type_K8Slice:
+
+		for key, value := range mapQuantityToResourceList(paritionData.(*nodecorev1alpha1.K8SlicePartition)) {
+			if prevRes, ok := resources[key]; !ok {
+				resources[key] = value
+			} else {
+				prevRes.Add(*value)
+				resources[key] = prevRes
+			}
 		}
+	default:
+		klog.Errorf("Partition type %s not supported", partitionType)
+		return nil
 	}
 	return resources
 }
@@ -78,7 +97,7 @@ func mapQuantityToResourceList(partition *nodecorev1alpha1.K8SlicePartition) map
 	resources[corev1.ResourceCPU.String()] = &partition.CPU
 	resources[corev1.ResourceMemory.String()] = &partition.Memory
 	resources[corev1.ResourcePods.String()] = &partition.Pods
-	resources[corev1.ResourceStorage.String()] = &partition.Storage
-	resources[corev1.ResourceEphemeralStorage.String()] = &partition.Storage
+	resources[corev1.ResourceStorage.String()] = partition.Storage
+	resources[corev1.ResourceEphemeralStorage.String()] = partition.Storage
 	return resources
 }

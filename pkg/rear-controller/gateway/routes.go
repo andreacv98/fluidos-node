@@ -26,6 +26,6 @@ var Routes = struct {
 	K8SliceFlavors: "/api/v1/flavors/k8slice",
 	VMFlavors:      "/api/v1/flavors/vm",
 	ServiceFlavors: "/api/v1/flavors/service",
-	Reserve:        "/api/v1/flavors/{flavorID}/reserve",
+	Reserve:        "/api/v1/reservations",
 	Purchase:       "/api/v1/transactions/{transactionID}/purchase",
 }

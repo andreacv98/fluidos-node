@@ -3,7 +3,7 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "fluidos.prefixedName" $rearManagerConfig }}
+  name: {{ include "fluidos.prefixedName" $rearControllerConfig }}
   namespace: {{ .Release.Namespace }}
 spec:
   ports:
@@ -12,4 +12,4 @@ spec:
       name: https
       targetPort: 9443 #9443
   selector:
-    {{- include "fluidos.labels" $rearManagerConfig | nindent 6 }}
+    {{- include "fluidos.labels" $rearControllerConfig | nindent 6 }}

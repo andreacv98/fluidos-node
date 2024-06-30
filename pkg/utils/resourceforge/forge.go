@@ -16,6 +16,7 @@ package resourceforge
 
 import (
 	"encoding/json"
+	"fmt"
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
@@ -78,7 +79,7 @@ func ForgePeeringCandidate(flavorPeeringCandidate *nodecorev1alpha1.Flavor,
 
 // ForgeReservation creates a Reservation CR from a PeeringCandidate.
 func ForgeReservation(pc *advertisementv1alpha1.PeeringCandidate,
-	partition *nodecorev1alpha1.K8SlicePartition,
+	partition *nodecorev1alpha1.Partition,
 	ni nodecorev1alpha1.NodeIdentity) *reservationv1alpha1.Reservation {
 	solverID := pc.Spec.SolverID
 	reservation := &reservationv1alpha1.Reservation{
@@ -100,7 +101,7 @@ func ForgeReservation(pc *advertisementv1alpha1.PeeringCandidate,
 			},
 			Reserve:  true,
 			Purchase: true,
-			Partition: func() *nodecorev1alpha1.K8SlicePartition {
+			Partition: func() *nodecorev1alpha1.Partition {
 				if partition != nil {
 					return partition
 				}
@@ -133,9 +134,14 @@ func ForgeContract(flavor *nodecorev1alpha1.Flavor, transaction *models.Transact
 			Seller:            flavor.Spec.Owner,
 			SellerCredentials: *lc,
 			TransactionID:     transaction.TransactionID,
-			Partition: func() *nodecorev1alpha1.K8SlicePartition {
+			Partition: func() *nodecorev1alpha1.Partition {
 				if transaction.Partition != nil {
-					return parseutil.ParsePartitionFromObj(transaction.Partition)
+					partition, err := ForgePartitionFromObj(*transaction.Partition)
+					if err != nil {
+						klog.Errorf("Error when parsing partition: %s", err)
+						return nil
+					}
+					return partition
 				}
 				return nil
 			}(),
@@ -159,7 +165,7 @@ func ForgeFlavorFromMetrics(node *models.NodeInfo, ni nodecorev1alpha1.NodeIdent
 			Cpu:     node.ResourceMetrics.CPUAvailable,
 			Memory:  node.ResourceMetrics.MemoryAvailable,
 			Pods:    node.ResourceMetrics.PodsAvailable,
-			Storage: node.ResourceMetrics.EphemeralStorage,
+			Storage: &node.ResourceMetrics.EphemeralStorage,
 			Gpu: &nodecorev1alpha1.GPU{
 				Model:  node.ResourceMetrics.GPU.Model,
 				Cores:  node.ResourceMetrics.GPU.CoresAvailable,
@@ -272,7 +278,8 @@ func ForgeContractObj(contract *reservationv1alpha1.Contract) models.Contract {
 		},
 		Partition: func() *models.Partition {
 			if contract.Spec.Partition != nil {
-				return parseutil.ParsePartition(contract.Spec.Partition)
+				partition := parseutil.ParsePartition(contract.Spec.Partition)
+				return partition
 			}
 			return nil
 		}(),
@@ -296,14 +303,19 @@ func ForgeResponsePurchaseObj(contract *models.Contract) *models.ResponsePurchas
 }
 
 // ForgeContractFromObj creates a Contract from a reservation.
-func ForgeContractFromObj(contract *models.Contract) *reservationv1alpha1.Contract {
+func ForgeContractFromObj(contract *models.Contract) (*reservationv1alpha1.Contract, error) {
+	// Forge flavorCR
+	flavorCR, err := ForgeFlavorFromObj(&contract.Flavor)
+	if err != nil {
+		return nil, err
+	}
 	return &reservationv1alpha1.Contract{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      contract.ContractID,
 			Namespace: flags.FluidoNamespace,
 		},
 		Spec: reservationv1alpha1.ContractSpec{
-			Flavor: *ForgeFlavorFromObj(&contract.Flavor),
+			Flavor: *flavorCR,
 			Buyer: nodecorev1alpha1.NodeIdentity{
 				Domain: contract.Buyer.Domain,
 				IP:     contract.Buyer.IP,
@@ -322,9 +334,14 @@ func ForgeContractFromObj(contract *models.Contract) *reservationv1alpha1.Contra
 				Endpoint:    contract.SellerCredentials.Endpoint,
 			},
 			TransactionID: contract.TransactionID,
-			Partition: func() *nodecorev1alpha1.K8SlicePartition {
+			Partition: func() *nodecorev1alpha1.Partition {
 				if contract.Partition != nil {
-					return parseutil.ParsePartitionFromObj(contract.Partition)
+					partition, err := ForgePartitionFromObj(*contract.Partition)
+					if err != nil {
+						klog.Errorf("Error when parsing partition: %s", err)
+						return nil
+					}
+					return partition
 				}
 				return nil
 			}(),
@@ -342,7 +359,7 @@ func ForgeContractFromObj(contract *models.Contract) *reservationv1alpha1.Contra
 				StartTime: tools.GetTimeNow(),
 			},
 		},
-	}
+	}, nil
 }
 
 // ForgeTransactionFromObj creates a transaction from a Transaction object.
@@ -361,9 +378,14 @@ func ForgeTransactionFromObj(transaction *models.Transaction) *reservationv1alph
 				NodeID: transaction.Buyer.NodeID,
 			},
 			ClusterID: transaction.ClusterID,
-			Partition: func() *nodecorev1alpha1.K8SlicePartition {
+			Partition: func() *nodecorev1alpha1.Partition {
 				if transaction.Partition != nil {
-					return parseutil.ParsePartitionFromObj(transaction.Partition)
+					partition, err := ForgePartitionFromObj(*transaction.Partition)
+					if err != nil {
+						klog.Errorf("Error when parsing partition: %s", err)
+						return nil
+					}
+					return partition
 				}
 				return nil
 			}(),
@@ -371,48 +393,99 @@ func ForgeTransactionFromObj(transaction *models.Transaction) *reservationv1alph
 	}
 }
 
+// ForgePartitionFromObj creates a Partition CR from a Partition object
+func ForgePartitionFromObj(partition models.Partition) (*nodecorev1alpha1.Partition, error) {
+	// Parse the Partition
+	switch partition.Name {
+	case models.K8SliceNameDefault:
+		// Force casting of partitionStruct to K8Slice
+		var partitionStruct models.K8SlicePartition
+		err := json.Unmarshal(partition.Data, &partitionStruct)
+		if err != nil {
+			return nil, err
+		}
+		k8SlicePartition := &nodecorev1alpha1.K8SlicePartition{
+			CPU:    partitionStruct.CPU,
+			Memory: partitionStruct.Memory,
+			Pods:   partitionStruct.Pods,
+			Gpu: func() *nodecorev1alpha1.GPU {
+				if partitionStruct.Gpu != nil {
+					return &nodecorev1alpha1.GPU{
+						Model:  partitionStruct.Gpu.Model,
+						Cores:  partitionStruct.Gpu.Cores,
+						Memory: partitionStruct.Gpu.Memory,
+					}
+				}
+				return nil
+			}(),
+			Storage: partitionStruct.Storage,
+		}
+
+		// Marshal the K8Slice partition to JSON
+		partitionData, err := json.Marshal(k8SlicePartition)
+		if err != nil {
+			return nil, err
+		}
+
+		return &nodecorev1alpha1.Partition{
+			PartitionTypeIdentifier: nodecorev1alpha1.Type_K8Slice,
+			PartitionData:           runtime.RawExtension{Raw: partitionData},
+		}, nil
+	// TODO: Implement the other partition types, if any
+	default:
+		return nil, fmt.Errorf("unknown partition type")
+	}
+}
+
 // ForgeFlavorFromObj creates a Flavor CR from a Flavor Object (REAR).
-func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
+func ForgeFlavorFromObj(flavor *models.Flavor) (*nodecorev1alpha1.Flavor, error) {
 
 	var flavorType nodecorev1alpha1.FlavorType
 
-	switch flavor.Type.GetFlavorTypeName() {
+	switch flavor.Type.Name {
 	case models.K8SliceNameDefault:
+		// Unmarshal K8SliceType
+		var flavorTypeDataModel models.K8Slice
+		err := json.Unmarshal(flavor.Type.Data, &flavorTypeDataModel)
+		if err != nil {
+			klog.Errorf("Error when unmarshalling K8SliceType: %s", err)
+			return nil, err
+		}
 		flavorTypeData := nodecorev1alpha1.K8Slice{
 			Characteristics: nodecorev1alpha1.K8SliceCharacteristics{
-				Cpu:     flavor.Type.(models.K8Slice).Characteristics.Cpu,
-				Memory:  flavor.Type.(models.K8Slice).Characteristics.Memory,
-				Pods:    flavor.Type.(models.K8Slice).Characteristics.Pods,
-				Storage: flavor.Type.(models.K8Slice).Characteristics.Storage,
+				Cpu:     flavorTypeDataModel.Characteristics.Cpu,
+				Memory:  flavorTypeDataModel.Characteristics.Memory,
+				Pods:    flavorTypeDataModel.Characteristics.Pods,
+				Storage: flavorTypeDataModel.Characteristics.Storage,
 				Gpu: &nodecorev1alpha1.GPU{
-					Model:  flavor.Type.(models.K8Slice).Characteristics.Gpu.Model,
-					Cores:  flavor.Type.(models.K8Slice).Characteristics.Gpu.Cores,
-					Memory: flavor.Type.(models.K8Slice).Characteristics.Gpu.Memory,
+					Model:  flavorTypeDataModel.Characteristics.Gpu.Model,
+					Cores:  flavorTypeDataModel.Characteristics.Gpu.Cores,
+					Memory: flavorTypeDataModel.Characteristics.Gpu.Memory,
 				},
 			},
 			Properties: nodecorev1alpha1.Properties{
-				Latency:           flavor.Type.(models.K8Slice).Properties.Latency,
-				SecurityStandards: flavor.Type.(models.K8Slice).Properties.SecurityStandards,
+				Latency:           flavorTypeDataModel.Properties.Latency,
+				SecurityStandards: flavorTypeDataModel.Properties.SecurityStandards,
 				CarbonFootprint: &nodecorev1alpha1.CarbonFootprint{
-					Embodied:    flavor.Type.(models.K8Slice).Properties.CarbonFootprint.Embodied,
-					Operational: flavor.Type.(models.K8Slice).Properties.CarbonFootprint.Operational,
+					Embodied:    flavorTypeDataModel.Properties.CarbonFootprint.Embodied,
+					Operational: flavorTypeDataModel.Properties.CarbonFootprint.Operational,
 				},
 			},
 			Policies: nodecorev1alpha1.Policies{
 				Partitionability: nodecorev1alpha1.Partitionability{
-					CpuMin:     flavor.Type.(models.K8Slice).Policies.Partitionability.CpuMin,
-					MemoryMin:  flavor.Type.(models.K8Slice).Policies.Partitionability.MemoryMin,
-					PodsMin:    flavor.Type.(models.K8Slice).Policies.Partitionability.PodsMin,
-					CpuStep:    flavor.Type.(models.K8Slice).Policies.Partitionability.CpuStep,
-					MemoryStep: flavor.Type.(models.K8Slice).Policies.Partitionability.MemoryStep,
-					PodsStep:   flavor.Type.(models.K8Slice).Policies.Partitionability.PodsStep,
+					CpuMin:     flavorTypeDataModel.Policies.Partitionability.CpuMin,
+					MemoryMin:  flavorTypeDataModel.Policies.Partitionability.MemoryMin,
+					PodsMin:    flavorTypeDataModel.Policies.Partitionability.PodsMin,
+					CpuStep:    flavorTypeDataModel.Policies.Partitionability.CpuStep,
+					MemoryStep: flavorTypeDataModel.Policies.Partitionability.MemoryStep,
+					PodsStep:   flavorTypeDataModel.Policies.Partitionability.PodsStep,
 				},
 			},
 		}
 		flavorTypeDataJSON, err := json.Marshal(flavorTypeData)
 		if err != nil {
 			klog.Errorf("Error when marshalling K8SliceType: %s", err)
-			return nil
+			return nil, err
 		}
 		flavorType = nodecorev1alpha1.FlavorType{
 			TypeIdentifier: nodecorev1alpha1.Type_K8Slice,
@@ -421,7 +494,7 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 
 	default:
 		klog.Errorf("Flavor type not recognized")
-		return nil
+		return nil, fmt.Errorf("flavor type not recognized")
 	}
 	f := &nodecorev1alpha1.Flavor{
 		ObjectMeta: metav1.ObjectMeta{
@@ -452,7 +525,7 @@ func ForgeFlavorFromObj(flavor *models.Flavor) *nodecorev1alpha1.Flavor {
 			},
 		},
 	}
-	return f
+	return f, nil
 }
 
 // ForgePartition creates a Partition from a FlavorSelector.
@@ -474,7 +547,12 @@ func ForgeK8SlicePartition(selector *nodecorev1alpha1.K8SliceSelector) *nodecore
 			cpu = cpuFilterData.(nodecorev1alpha1.ResourceMatchSelector).Value
 		// Range Filter
 		case nodecorev1alpha1.TypeRangeFilter:
-			cpu = cpuFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min
+			// Check if min value is set
+			if cpuFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min != nil {
+				rrs := cpuFilterData.(nodecorev1alpha1.ResourceRangeSelector)
+				cpu = *rrs.Min
+			}
+
 		// Default
 		default:
 			klog.Errorf("CPU filter type not recognized")
@@ -496,7 +574,11 @@ func ForgeK8SlicePartition(selector *nodecorev1alpha1.K8SliceSelector) *nodecore
 			memory = memoryFilterData.(nodecorev1alpha1.ResourceMatchSelector).Value
 		// Range Filter
 		case nodecorev1alpha1.TypeRangeFilter:
-			memory = memoryFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min
+			// Check if min value is set
+			if memoryFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min != nil {
+				rrs := memoryFilterData.(nodecorev1alpha1.ResourceRangeSelector)
+				memory = *rrs.Min
+			}
 		// Default
 		default:
 			klog.Errorf("Memory filter type not recognized")
@@ -518,7 +600,12 @@ func ForgeK8SlicePartition(selector *nodecorev1alpha1.K8SliceSelector) *nodecore
 			pods = podsFilterData.(nodecorev1alpha1.ResourceMatchSelector).Value
 		// Range Filter
 		case nodecorev1alpha1.TypeRangeFilter:
-			pods = podsFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min
+			// Check if min value is set
+			if podsFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min != nil {
+				rrs := podsFilterData.(nodecorev1alpha1.ResourceRangeSelector)
+				pods = *rrs.Min
+			}
+
 		// Default
 		default:
 			klog.Errorf("Pods filter type not recognized")
@@ -540,7 +627,11 @@ func ForgeK8SlicePartition(selector *nodecorev1alpha1.K8SliceSelector) *nodecore
 			storage = storageFilterData.(nodecorev1alpha1.ResourceMatchSelector).Value
 		// Range Filter
 		case nodecorev1alpha1.TypeRangeFilter:
-			storage = storageFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min
+			// Check if min value is set
+			if storageFilterData.(nodecorev1alpha1.ResourceRangeSelector).Min != nil {
+				rrs := storageFilterData.(nodecorev1alpha1.ResourceRangeSelector)
+				storage = *rrs.Min
+			}
 		// Default
 		default:
 			klog.Errorf("Storage filter type not recognized")
@@ -553,7 +644,7 @@ func ForgeK8SlicePartition(selector *nodecorev1alpha1.K8SliceSelector) *nodecore
 		CPU:     cpu,
 		Memory:  memory,
 		Pods:    pods,
-		Storage: storage,
+		Storage: &storage,
 	}
 }
 

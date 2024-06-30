@@ -16,6 +16,7 @@ package rearmanager
 
 import (
 	"context"
+	"encoding/json"
 
 	fcutils "github.com/liqotech/liqo/pkg/utils/foreignCluster"
 	"k8s.io/apimachinery/pkg/api/errors"
@@ -265,7 +266,7 @@ func (r *SolverReconciler) handleReserveAndBuy(ctx context.Context, req ctrl.Req
 	reserveAndBuyStatus := solver.Status.ReserveAndBuy
 	switch reserveAndBuyStatus {
 	case nodecorev1alpha1.PhaseIdle:
-		var partition *nodecorev1alpha1.K8SlicePartition
+		var partition *nodecorev1alpha1.Partition
 		klog.Infof("Creating the Reservation %s", req.NamespacedName.Name)
 		var pcList []advertisementv1alpha1.PeeringCandidate
 		pc := advertisementv1alpha1.PeeringCandidate{}
@@ -310,7 +311,18 @@ func (r *SolverReconciler) handleReserveAndBuy(ctx context.Context, req ctrl.Req
 			if solverTypeIdentifier == nodecorev1alpha1.Type_K8Slice {
 				// Forge partition
 				k8sliceSelector := solverTypeData.(nodecorev1alpha1.K8SliceSelector)
-				partition = resourceforge.ForgeK8SlicePartition(&k8sliceSelector)
+				k8slicepartition := resourceforge.ForgeK8SlicePartition(&k8sliceSelector)
+				// Convert the K8SlicePartition to JSON
+				k8slicepartitionJSON, err := json.Marshal(k8slicepartition)
+				if err != nil {
+					klog.Errorf("Error when marshalling K8SlicePartition for Solver %s: %s", solver.Name, err)
+					return ctrl.Result{}, err
+				}
+				partition = &nodecorev1alpha1.Partition{
+					PartitionTypeIdentifier: solverTypeIdentifier,
+					// Partition Data is the raw data of the k8slicepartion
+					PartitionData: runtime.RawExtension{Raw: k8slicepartitionJSON},
+				}
 			}
 			// TODO: If not K8Slice, implement the other types partitions if possible
 

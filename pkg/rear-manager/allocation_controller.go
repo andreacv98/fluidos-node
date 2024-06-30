@@ -22,6 +22,7 @@ import (
 	discovery "github.com/liqotech/liqo/pkg/discovery"
 	fcutils "github.com/liqotech/liqo/pkg/utils/foreignCluster"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog/v2"
@@ -411,12 +412,22 @@ func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K
 	if flavorTypeIdentifier != nodecorev1alpha1.Type_K8Slice {
 
 		if contract.Spec.Partition != nil {
+			// Parse Partition
+			partitionTypeIdentifier, partitionData, err := nodecorev1alpha1.ParsePartition(contract.Spec.Partition)
+			if err != nil {
+				klog.Errorf("Error when parsing Partition %s: %v", contract.Spec.Partition.PartitionTypeIdentifier, err)
+				return nil
+			}
+			if partitionTypeIdentifier != nodecorev1alpha1.Type_K8Slice {
+				klog.Errorf("Partition %s is not a K8Slice type", contract.Spec.Partition.PartitionTypeIdentifier)
+				return nil
+			}
 			return &nodecorev1alpha1.K8SliceCharacteristics{
-				Cpu:     contract.Spec.Partition.CPU,
-				Memory:  contract.Spec.Partition.Memory,
-				Pods:    contract.Spec.Partition.Pods,
-				Storage: contract.Spec.Partition.Storage,
-				Gpu:     contract.Spec.Partition.Gpu,
+				Cpu:     partitionData.(nodecorev1alpha1.K8SlicePartition).CPU,
+				Memory:  partitionData.(nodecorev1alpha1.K8SlicePartition).Memory,
+				Pods:    partitionData.(nodecorev1alpha1.K8SlicePartition).Pods,
+				Storage: partitionData.(nodecorev1alpha1.K8SlicePartition).Storage,
+				Gpu:     partitionData.(nodecorev1alpha1.K8SlicePartition).Gpu,
 			}
 		}
 		return flavorType.(*nodecorev1alpha1.K8Slice).Characteristics.DeepCopy()
@@ -431,21 +442,34 @@ func computeK8SliceResources(contract *reservation.Contract) *nodecorev1alpha1.K
 func computeK8SliceCharacteristics(origin, part *nodecorev1alpha1.K8SliceCharacteristics) *nodecorev1alpha1.K8SliceCharacteristics {
 	newCPU := origin.Cpu.DeepCopy()
 	newMemory := origin.Memory.DeepCopy()
-	newStorage := origin.Storage.DeepCopy()
-	newPods := origin.Pods.DeepCopy()
-	newGpuCores := origin.Gpu.Cores.DeepCopy()
-	newGpuMemory := origin.Gpu.Memory.DeepCopy()
+	var newStorage *resource.Quantity
+	if origin.Storage != nil {
+		storageOriginal := origin.Storage.DeepCopy()
+		newStorage = &storageOriginal
+	}
+	newPods := origin.Pods.DeepCopy()	
 	newCPU.Sub(part.Cpu)
 	newMemory.Sub(part.Memory)
 	newPods.Sub(part.Pods)
-	newStorage.Sub(part.Storage)
-	newGpuCores.Sub(part.Gpu.Cores)
-	newGpuMemory.Sub(part.Gpu.Memory)
-	newGpu := &nodecorev1alpha1.GPU{
-		Model:  part.Gpu.Model,
-		Cores:  newGpuCores,
-		Memory: newGpuMemory,
+	if part.Storage != nil {
+		newStorage.Sub(*part.Storage)
 	}
+
+	var newGpu *nodecorev1alpha1.GPU
+	if origin.Gpu != nil {
+		newGpuCores := origin.Gpu.Cores.DeepCopy()
+		newGpuMemory := origin.Gpu.Memory.DeepCopy()
+		if part.Gpu == nil {
+			newGpuCores.Sub(part.Gpu.Cores)
+			newGpuMemory.Sub(part.Gpu.Memory)
+		}
+		newGpu = &nodecorev1alpha1.GPU{
+			Model:  part.Gpu.Model,
+			Cores:  newGpuCores,
+			Memory: newGpuMemory,
+		}
+	}
+	
 	return &nodecorev1alpha1.K8SliceCharacteristics{
 		Cpu:     newCPU,
 		Memory:  newMemory,

@@ -88,7 +88,7 @@ func (in *ContractSpec) DeepCopyInto(out *ContractSpec) {
 	in.Flavor.DeepCopyInto(&out.Flavor)
 	if in.Partition != nil {
 		in, out := &in.Partition, &out.Partition
-		*out = new(nodecorev1alpha1.K8SlicePartition)
+		*out = new(nodecorev1alpha1.Partition)
 		(*in).DeepCopyInto(*out)
 	}
 	out.Buyer = in.Buyer
@@ -293,7 +293,7 @@ func (in *TransactionSpec) DeepCopyInto(out *TransactionSpec) {
 	out.Buyer = in.Buyer
 	if in.Partition != nil {
 		in, out := &in.Partition, &out.Partition
-		*out = new(nodecorev1alpha1.K8SlicePartition)
+		*out = new(nodecorev1alpha1.Partition)
 		(*in).DeepCopyInto(*out)
 	}
 }

@@ -121,7 +121,7 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				klog.Errorf("Error when updating PeeringCandidate %s status before reconcile: %s", req.NamespacedName, err)
 				return ctrl.Result{}, err
 			}
-			// Appemd the PeeringCandidate to the list of PeeringCandidates found by the Discovery
+			// Append the PeeringCandidate to the list of PeeringCandidates found by the Discovery
 			discovery.Status.PeeringCandidateList.Items = append(discovery.Status.PeeringCandidateList.Items, *peeringCandidate)
 		}
 

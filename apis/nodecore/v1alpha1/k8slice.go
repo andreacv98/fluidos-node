@@ -44,7 +44,7 @@ type K8SliceCharacteristics struct {
 	// GPU is the number of GPU cores of the K8Slice Flavor.
 	Gpu *GPU `json:"gpu,omitempty"`
 	// Storage is the amount of storage offered by this K8Slice Flavor.
-	Storage resource.Quantity `json:"storage,omitempty"`
+	Storage *resource.Quantity `json:"storage,omitempty"`
 }
 
 // GPU represents the GPU characteristics of a K8Slice Flavor.

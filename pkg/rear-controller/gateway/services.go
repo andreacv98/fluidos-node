@@ -45,7 +45,7 @@ func searchFlavorWithSelector(ctx context.Context, selector models.Selector, add
 		url = fmt.Sprintf("http://%s%s", addr, Routes.K8SliceFlavors)
 		// Convert the selector to query parameters
 	// TODO: Implement the other selector types
-	
+
 	default:
 		return nil, fmt.Errorf("unsupported selector type")
 	}
@@ -80,7 +80,10 @@ func searchFlavorWithSelector(ctx context.Context, selector models.Selector, add
 	var flavorCRs []*nodecorev1alpha1.Flavor
 
 	for _, flavor := range flavors {
-		flavorCR := resourceforge.ForgeFlavorFromObj(&flavor)
+		flavorCR, err := resourceforge.ForgeFlavorFromObj(&flavor)
+		if err != nil {
+			return nil, err
+		}
 		flavorCRs = append(flavorCRs, flavorCR)
 	}
 
@@ -116,7 +119,10 @@ func searchFlavor(ctx context.Context, addr string) ([]*nodecorev1alpha1.Flavor,
 	var flavorCRs []*nodecorev1alpha1.Flavor
 
 	for _, flavor := range flavors {
-		flavorCR := resourceforge.ForgeFlavorFromObj(&flavor)
+		flavorCR, err := resourceforge.ForgeFlavorFromObj(&flavor)
+		if err != nil {
+			return nil, err
+		}
 		flavorCRs = append(flavorCRs, flavorCR)
 	}
 

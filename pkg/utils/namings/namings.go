@@ -70,6 +70,18 @@ func ForgeFlavorName(resourceType, domain string) string {
 	return domain + "-" + resType + "-" + ForgeHashString(r, 8)
 }
 
+// ForgePartitionName generates a name for the Partition.
+func ForgePartitionName(partitionType string) string {
+	// Generate Random String
+	r, err := ForgeRandomString()
+	if err != nil {
+		klog.Errorf("Error when generating random string: %s", err)
+	}
+
+	// Append the random string to the partition type
+	return fmt.Sprintf("%s-%s", partitionType, r)
+}
+
 // ForgeDiscoveryName returns the name of the discovery following the pattern solverID-discovery.
 func ForgeDiscoveryName(solverID string) string {
 	return fmt.Sprintf("discovery-%s", solverID)
