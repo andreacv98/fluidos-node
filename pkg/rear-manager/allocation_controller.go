@@ -447,7 +447,7 @@ func computeK8SliceCharacteristics(origin, part *nodecorev1alpha1.K8SliceCharact
 		storageOriginal := origin.Storage.DeepCopy()
 		newStorage = &storageOriginal
 	}
-	newPods := origin.Pods.DeepCopy()	
+	newPods := origin.Pods.DeepCopy()
 	newCPU.Sub(part.Cpu)
 	newMemory.Sub(part.Memory)
 	newPods.Sub(part.Pods)
@@ -469,7 +469,7 @@ func computeK8SliceCharacteristics(origin, part *nodecorev1alpha1.K8SliceCharact
 			Memory: newGpuMemory,
 		}
 	}
-	
+
 	return &nodecorev1alpha1.K8SliceCharacteristics{
 		Cpu:     newCPU,
 		Memory:  newMemory,
