@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"k8s.io/apimachinery/pkg/api/resource"
+
+	nodecorev1alpha1 "github.com/fluidos-project/node/apis/nodecore/v1alpha1"
 )
 
 // Flavor represents a Flavor object with its characteristics and policies.
@@ -28,7 +30,7 @@ type Flavor struct {
 	Type                FlavorType   `json:"type"`
 	NetworkPropertyType string       `json:"networkPropertyType,omitempty"`
 	Timestamp           time.Time    `json:"timestamp"`
-	Location            Location     `json:"location,omitempty"`
+	Location            *Location     `json:"location,omitempty"`
 	Price               Price        `json:"price"`
 	Owner               NodeIdentity `json:"owner"`
 	Availability        bool         `json:"availability"`
@@ -133,4 +135,56 @@ type ResourceQuantityRangeFilter struct {
 
 func (fq ResourceQuantityRangeFilter) GetFilterType() FilterType {
 	return RangeFilter
+}
+
+// MapToFlavorTypeName maps a nodecorev1alpha1.FlavorTypeIdentifier to a models.FlavorTypeName.
+func MapToFlavorTypeName(flavorType nodecorev1alpha1.FlavorTypeIdentifier) FlavorTypeName {
+	switch flavorType {
+	case nodecorev1alpha1.Type_K8Slice:
+		return K8SliceNameDefault
+	case nodecorev1alpha1.Type_VM:
+		return VMNameDefault
+	case nodecorev1alpha1.Type_Service:
+		return ServiceNameDefault
+	default:
+		return ""
+	}
+}
+
+// MapFromFlavorTypeName maps a models.FlavorTypeName to a nodecorev1alpha1.FlavorTypeIdentifier.
+func MapFromFlavorTypeName(flavorType FlavorTypeName) nodecorev1alpha1.FlavorTypeIdentifier {
+	switch flavorType {
+	case K8SliceNameDefault:
+		return nodecorev1alpha1.Type_K8Slice
+	case VMNameDefault:
+		return nodecorev1alpha1.Type_VM
+	case ServiceNameDefault:
+		return nodecorev1alpha1.Type_Service
+	default:
+		return ""
+	}
+}
+
+// MapToFilterType maps a nodecorev1alpha1.FilterType to a models.FilterType.
+func MapToFilterType(filterType nodecorev1alpha1.FilterType) FilterType {
+	switch filterType {
+	case nodecorev1alpha1.TypeMatchFilter:
+		return MatchFilter
+	case nodecorev1alpha1.TypeRangeFilter:
+		return RangeFilter
+	default:
+		return ""
+	}
+}
+
+// MapFromFilterType maps a models.FilterType to a nodecorev1alpha1.FilterType.
+func MapFromFilterType(filterType FilterType) nodecorev1alpha1.FilterType {
+	switch filterType {
+	case MatchFilter:
+		return nodecorev1alpha1.TypeMatchFilter
+	case RangeFilter:
+		return nodecorev1alpha1.TypeRangeFilter
+	default:
+		return ""
+	}
 }

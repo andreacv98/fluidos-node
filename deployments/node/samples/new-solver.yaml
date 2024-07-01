@@ -9,14 +9,14 @@ spec:
     selectorTypeIdentifier: K8Slice
     selectorTypeData:
       cpuFilter:
-        name: Match
+        name: Range
         data:
-          value: "1000m"
+          min: "50m"
       memoryFilter:
         name: Range
         data:
           min: "1Gi"
-          max: "10Gi"
+          max: "100Gi"
 
   intentID: "intent-sample"
   # This flag is used to indicate that the solver should find a candidate (FLUIDOS node)

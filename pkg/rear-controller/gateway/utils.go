@@ -20,32 +20,23 @@ import (
 	"net/http"
 	"net/url"
 	"reflect"
+	"regexp"
+	"strings"
 
-	"github.com/gorilla/schema"
 	"k8s.io/klog/v2"
 
 	"github.com/fluidos-project/node/pkg/utils/models"
+
+	resourceLib "k8s.io/apimachinery/pkg/api/resource"
 )
 
 // selectorToQueryParams converts a selector to a query string.
 func selectorToQueryParams(selector models.Selector) (string, error) {
-	var values = url.Values{}
-	var encoder = schema.NewEncoder()
 
 	switch selector.GetSelectorType() {
 	case models.K8SliceNameDefault:
 		k8sliceSelector := selector.(models.K8SliceSelector)
-		klog.Infof("k8sliceSelector: %v", k8sliceSelector)
-		encoder.RegisterEncoder(&models.ResourceQuantityFilter{}, EncoderResourceQuantityFilter)
-		klog.Infof("encoder: %v", encoder)
-		err := encoder.Encode(k8sliceSelector, values)
-		if err != nil {
-			return "", err
-		}
-
-		klog.Infof("Encoded selector: %v", values.Encode())
-
-		return values.Encode(), nil
+		return encodeK8SliceSelector(k8sliceSelector)
 	default:
 		return "", fmt.Errorf("unsupported selector type")
 	}
@@ -53,20 +44,20 @@ func selectorToQueryParams(selector models.Selector) (string, error) {
 
 // queryParamToSelector converts a query string to a selector.
 func queryParamToSelector(queryValues url.Values, selectorType models.FlavorTypeName) (models.Selector, error) {
-
-	var decoder = schema.NewDecoder()
-
 	klog.Infof("queryValues: %v", queryValues)
+
+	// Print each query parameter
+	for key, value := range queryValues {
+		klog.Infof("key: %s, value: %s", key, value)
+	}
 
 	switch selectorType {
 	case models.K8SliceNameDefault:
-		var selector models.K8SliceSelector
-		decoder.RegisterConverter(models.ResourceQuantityFilter{}, ConverterResourceQuantityFilter)
-		err := decoder.Decode(&selector, queryValues)
+		k8sliceSelector, err := decodeK8SliceSelector(queryValues)
 		if err != nil {
 			return nil, err
 		}
-		return selector, nil
+		return *k8sliceSelector, nil
 	default:
 		return nil, fmt.Errorf("unsupported selector type")
 	}
@@ -122,118 +113,272 @@ func encodeResponseStatusCode(w http.ResponseWriter, data interface{}, statusCod
 	_, _ = w.Write(resp)
 }
 
-func EncoderResourceQuantityFilter(v reflect.Value) string {
-	filter, ok := v.Interface().(*models.ResourceQuantityFilter)
-	if filter == nil {
-		return ""
+func encodeK8SliceSelector(selector models.K8SliceSelector) (string, error) {
+	var values string
+
+	if selector.Cpu != nil {
+		klog.Info("Encoding CPU")
+		cpuEncoded := encoderResourceQuantityFilter(reflect.ValueOf(selector.Cpu))
+		for key, value := range cpuEncoded {
+			values += fmt.Sprintf("filter[cpu]%s=%s&", key, value)
+		}
 	}
-	if !ok {
-		klog.Info("Not a ResourceQuantityFilter")
-		return ""
+	if selector.Memory != nil {
+		klog.Info("Encoding Memory")
+		memoryEncoded := encoderResourceQuantityFilter(reflect.ValueOf(selector.Memory))
+		for key, value := range memoryEncoded {
+			values += fmt.Sprintf("filter[memory]%s=%s&", key, value)
+		}
 	}
-
-	values := url.Values{}
-
-	var dataMap map[string]string
-
-	switch filter.Name {
-	case models.MatchFilter:
-		var matchFilter models.ResourceQuantityMatchFilter
-		if err := json.Unmarshal(filter.Data, &matchFilter); err != nil {
-			return ""
+	if selector.Pods != nil {
+		klog.Info("Encoding Pods")
+		podsEncoded := encoderResourceQuantityFilter(reflect.ValueOf(selector.Pods))
+		for key, value := range podsEncoded {
+			values += fmt.Sprintf("filter[pods]%s=%s&", key, value)
 		}
-		dataMap = map[string]string{
-			"[match]": matchFilter.Value.String(),
+	}
+	if selector.Storage != nil {
+		klog.Info("Encoding Storage")
+		storageEncoded := encoderResourceQuantityFilter(reflect.ValueOf(selector.Storage))
+		for key, value := range storageEncoded {
+			values += fmt.Sprintf("[storage]%s=%s&", key, value)
 		}
-	case models.RangeFilter:
-		var rangeFilter models.ResourceQuantityRangeFilter
-		if err := json.Unmarshal(filter.Data, &rangeFilter); err != nil {
-			return ""
-		}
-		subDataMap := map[string]string{}
-		if rangeFilter.Min != nil {
-			subDataMap["min"] = rangeFilter.Min.String()
-		}
-		if rangeFilter.Max != nil {
-			subDataMap["max"] = rangeFilter.Max.String()
-		}
-		dataMap = map[string]string{
-			"[range]": "[min]="+subDataMap["min"] + "," + "[max]="+subDataMap["max"],
-		}
-	default:
-		return ""
 	}
 
-	for k, v := range dataMap {
-		values.Set(k, v)
+	// Remove trailing "&" if present
+	if len(values) > 0 && values[len(values)-1] == '&' {
+		values = values[:len(values)-1]
 	}
-	klog.Infof("Encoded Resource Selector selector: %v", values.Encode())
 
-	klog.Infof("Encoded selector: %v", values.Encode())
+	return values, nil
 
-	return values.Encode()
 }
 
-func decodeResourceQuantityFilter(values url.Values, key string) (*models.ResourceQuantityFilter, error) {
-	if values.Get(key) == "" {
-		return nil, nil
-	}
+func encoderResourceQuantityFilter(v reflect.Value) map[string]string {
+    filter, ok := v.Interface().(*models.ResourceQuantityFilter)
+    if filter == nil {
+		return nil
+    }
+    if !ok {
+        klog.Warning("Not a ResourceQuantityFilter")
+        return nil
+    }
 
-	filter := &models.ResourceQuantityFilter{
-		Name: models.FilterType(values.Get(key + "[name]")),
-	}
+    var values = map[string]string{}
 
-	switch filter.Name {
+    switch filter.Name {
+    case models.MatchFilter:
+        var matchFilter models.ResourceQuantityMatchFilter
+		klog.Info("MatchFilter")
+        if err := json.Unmarshal(filter.Data, &matchFilter); err != nil {
+            return nil
+        }
+		value := matchFilter.Value
+		values["[match]"] = value.String()
+    case models.RangeFilter:
+        var rangeFilter models.ResourceQuantityRangeFilter
+		klog.Info("RangeFilter")
+        if err := json.Unmarshal(filter.Data, &rangeFilter); err != nil {
+			klog.Warningf("Error unmarshaling RangeFilter: %v", err)
+            return nil
+        }
+		klog.Info("RangeFilter: ", rangeFilter)
+        if rangeFilter.Min != nil {
+			min := *rangeFilter.Min
+			values["[range][min]"] = min.String()
+        }
+        if rangeFilter.Max != nil {
+			max := *rangeFilter.Max
+			values["[range][max]"] = max.String()
+        }
+    default:
+		klog.Warningf("Unsupported filter type: %s", filter.Name)
+        return nil
+    }
+    return values
+}
+
+func decodeResourceQuantityFilter(filterTypeName models.FilterType, original *models.ResourceQuantityFilter, parts []string, value []string) (*models.ResourceQuantityFilter, error) {
+
+	var result = models.ResourceQuantityFilter{}
+
+	switch filterTypeName {
 	case models.MatchFilter:
+		// Check you can't have multiple match filters for the same resource in the same selector
+		if original != nil {
+			return nil, fmt.Errorf("multiple match filters for the same resource")
+		}
+		// Set the match filter
 		var matchFilter models.ResourceQuantityMatchFilter
-		if err := json.Unmarshal([]byte(values.Get(key + "[data]")), &matchFilter); err != nil {
-			return nil, fmt.Errorf("error unmarshaling MatchFilter: %v", err)
-		}
-		filter.Data = json.RawMessage(values.Get(key + "[data]"))
-
-	case models.RangeFilter:
-		var rangeFilter models.ResourceQuantityRangeFilter
-		if err := json.Unmarshal([]byte(values.Get(key + "[data]")), &rangeFilter); err != nil {
-			return nil, fmt.Errorf("error unmarshaling RangeFilter: %v", err)
-		}
-		data, err := json.Marshal(rangeFilter)
+		match, err := resourceLib.ParseQuantity(value[0])
 		if err != nil {
-			return nil, fmt.Errorf("error marshaling RangeFilter: %v", err)
+			return nil, err
 		}
-		filter.Data = json.RawMessage(data)
+		matchFilter.Value = match
+		// Encode the match filter to a json.RawMessage
+		matchFilterBytes, err := json.Marshal(matchFilter)
+		if err != nil {
+			return nil, err
+		}
 
+		result = models.ResourceQuantityFilter{
+			Name: models.MatchFilter,
+			Data: matchFilterBytes,
+		}
+	case models.RangeFilter:
+		// You can have multiple range filters for the same resource in the same selector, but they must be different
+		// Check if the filter is already set
+		if original != nil {
+			// FILTER ALREADY SET
+
+			result = *original
+
+			// Check if the filter is a range filter
+			if result.Name != models.RangeFilter {
+				return nil, fmt.Errorf("cannot have range filter for a resource with another filter type")
+			}
+			// The filter is a range filter
+			// Get the range filter
+			var rangeFilter models.ResourceQuantityRangeFilter
+			if err := json.Unmarshal(result.Data, &rangeFilter); err != nil {
+				return nil, err
+			}
+			// Check the value of the filter is not already set
+			switch parts[3][:len(parts[3])-1] {
+			case "min":
+				if rangeFilter.Min != nil {
+					return nil, fmt.Errorf("min value already set")
+				}
+				// Set the min value
+				min, err := resourceLib.ParseQuantity(value[0])
+				if err != nil {
+					return nil, err
+				}
+				rangeFilter.Min = &min
+			case "max":
+				if rangeFilter.Max != nil {
+					return nil, fmt.Errorf("max value already set")
+				}
+				// Set the max value
+				max, err := resourceLib.ParseQuantity(value[0])
+				if err != nil {
+					return nil, err
+				}
+				rangeFilter.Max = &max
+			default:
+				return nil, fmt.Errorf("invalid key format: %s", parts[3])
+			}
+			// Encode the range filter to a json.RawMessage
+			rangeFilterBytes, err := json.Marshal(rangeFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			result.Data = rangeFilterBytes
+		} else {
+			// FILTER NOT SET
+
+			// Set the range filter
+			var rangeFilter models.ResourceQuantityRangeFilter
+			switch parts[3][:len(parts[3])-1] {
+			case "min":
+				min, err := resourceLib.ParseQuantity(value[0])
+				if err != nil {
+					return nil, err
+				}
+				rangeFilter.Min = &min
+			case "max":
+				max , err := resourceLib.ParseQuantity(value[0])
+				if err != nil {
+					return nil, err
+				}
+				rangeFilter.Max = &max
+			default:
+				return nil, fmt.Errorf("invalid key format: %s", parts[3])
+			}
+			// Encode the range filter to a json.RawMessage
+			rangeFilterBytes, err := json.Marshal(rangeFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			result = models.ResourceQuantityFilter{
+				Name: models.RangeFilter,
+				Data: rangeFilterBytes,
+			}
+		}
 	default:
-		return nil, fmt.Errorf("unsupported filter type: %s", filter.Name)
+		return nil, fmt.Errorf("invalid filter type: %s", filterTypeName)
 	}
 
-	return filter, nil
+	klog.Infof("Decoded filter: %v", result)
+	klog.Infof("Decoded filter type: %v", result.Name)
+
+	return &result, nil
 }
 
-func ConverterResourceQuantityFilter(v string) reflect.Value {
-	selector := &models.K8SliceSelector{}
+func decodeK8SliceSelector(values url.Values) (*models.K8SliceSelector, error) {
+	selector := models.K8SliceSelector{}
 
-	values, err := url.ParseQuery(v)
+	// Define the regex pattern for the expected keys
+	keyPattern := regexp.MustCompile(`^filter\[(cpu|memory|pods|storage)\]\[(match|range)\](?:\[(min|max)\])?$`)
 
-	if err != nil {
-		return reflect.ValueOf(nil)
+	for key, value := range values {
+		// Check if the key matches the expected pattern
+		if !keyPattern.MatchString(key) {
+			return nil, fmt.Errorf("invalid key format: %s", key)
+		}
+
+		klog.Infof("Decoding key: %s", key)
+
+		parts := strings.Split(key, "[")
+		resource := parts[1][:len(parts[1])-1]
+		filterType := parts[2][:len(parts[2])-1]
+
+		// Convert filterType to FilterType
+		var filterTypeName models.FilterType
+		switch filterType {
+		case "match":
+			filterTypeName = models.MatchFilter
+		case "range":
+			filterTypeName = models.RangeFilter
+		default:
+			return nil, fmt.Errorf("invalid filter type: %s", filterType)
+		}
+
+		switch resource {
+		case "cpu":
+			filter, err := decodeResourceQuantityFilter(filterTypeName, selector.Cpu, parts, value)
+			if err != nil {
+				return nil, err
+			}
+			selector.Cpu = filter
+			klog.Infof("Selector CPU: %v", selector.Cpu)		
+		case "memory":
+			filter, err := decodeResourceQuantityFilter(filterTypeName, selector.Memory, parts, value)
+			if err != nil {
+				return nil, err
+			}
+			selector.Memory = filter
+			klog.Infof("Selector Memory: %v", selector.Memory)
+		case "pods":
+			filter, err := decodeResourceQuantityFilter(filterTypeName, selector.Pods, parts, value)
+			if err != nil {
+				return nil, err
+			}
+			selector.Pods = filter
+			klog.Infof("Selector Pods: %v", selector.Pods)
+		case "storage":
+			filter, err := decodeResourceQuantityFilter(filterTypeName, selector.Storage, parts, value)
+			if err != nil {
+				return nil, err
+			}
+			selector.Storage = filter
+			klog.Infof("Selector Storage: %v", selector.Storage)
+		default:
+			return nil, fmt.Errorf("invalid resource: %s", resource)
+		}
 	}
 
-	selector.Cpu, err = decodeResourceQuantityFilter(values, "cpu")
-	if err != nil {
-		return reflect.ValueOf(nil)
-	}
-	selector.Memory, err = decodeResourceQuantityFilter(values, "memory")
-	if err != nil {
-		return reflect.ValueOf(nil)
-	}
-	selector.Pods, err = decodeResourceQuantityFilter(values, "pods")
-	if err != nil {
-		return reflect.ValueOf(nil)
-	}
-	selector.Storage, err = decodeResourceQuantityFilter(values, "storage")
-	if err != nil {
-		return reflect.ValueOf(nil)
-	}
-
-	return reflect.ValueOf(selector)
+	return &selector, nil
 }

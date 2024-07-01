@@ -72,6 +72,9 @@ func searchFlavorWithSelector(ctx context.Context, selector models.Selector, add
 		return nil, fmt.Errorf("received non-OK response status code: %d", resp.StatusCode)
 	}
 
+	// Print the response body
+	klog.Infof("Response body: %s", resp.Body)
+
 	if err := json.NewDecoder(resp.Body).Decode(&flavors); err != nil {
 		klog.Errorf("Error decoding the response body: %s", err)
 		return nil, err

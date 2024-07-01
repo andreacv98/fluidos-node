@@ -32,11 +32,17 @@ import (
 func FilterFlavorsBySelector(flavors []nodecorev1alpha1.Flavor, selector models.Selector) ([]nodecorev1alpha1.Flavor, error) {
 	var flavorsSelected []nodecorev1alpha1.Flavor
 
+	klog.Infof("Filtering flavors by selector: %v", selector)
+	klog.Infof("Selector type: %s", selector.GetSelectorType())
+
+	// Map the selector flavor type to the FlavorTypeIdentifier
+	selectorType := models.MapFromFlavorTypeName(selector.GetSelectorType())
+
 	// Get the Flavors that match the selector
 	for i := range flavors {
 		f := flavors[i]
-		// TODO: Not very strong and nice comparison, needs to be reviewed and improved
-		if string(f.Spec.FlavorType.TypeIdentifier) == string(selector.GetSelectorType()) {
+		if f.Spec.FlavorType.TypeIdentifier == selectorType {
+			klog.Infof("Flavor type matches selector type, which is %s", selector.GetSelectorType())
 			if FilterFlavor(selector, &f) {
 				flavorsSelected = append(flavorsSelected, f)
 			}
@@ -64,8 +70,10 @@ func FilterFlavor(selector models.Selector, flavorCR *nodecorev1alpha1.Flavor) b
 			return false
 		}
 		// Cast the selector to a K8Slice selector
-		k8sliceSelector := selector.(*models.K8SliceSelector)
-		return filterFlavorK8Slice(k8sliceSelector, flavorTypeData.(*nodecorev1alpha1.K8Slice))
+		k8sliceSelector := selector.(models.K8SliceSelector)
+		// Cast the flavor type data to a K8Slice CR
+		flavorTypeCR := flavorTypeData.(nodecorev1alpha1.K8Slice)
+		return filterFlavorK8Slice(&k8sliceSelector, &flavorTypeCR)
 	default:
 		// Flavor type not supported
 		klog.Errorf("flavor type %s not supported", flavorCR.Spec.FlavorType.TypeIdentifier)
@@ -103,9 +111,19 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 				return false
 			}
 			// Check if the flavor CPU is within the range
-			if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Max) > 0 {
-				klog.Infof("CPU Filter: %d-%d - Flavor CPU: %d", cpuFilter.Min, cpuFilter.Max, flavorTypeK8SliceCR.Characteristics.Cpu)
-				return false
+			// If the cpuFilter.Min exists check if the flavor CPU is greater or equal to it
+			if cpuFilter.Min != nil {
+				if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Min) < 0 {
+					klog.Infof("CPU Filter: %d-%d - Flavor CPU: %d", cpuFilter.Min, cpuFilter.Max, flavorTypeK8SliceCR.Characteristics.Cpu)
+					return false
+				}
+			}
+			// If the cpuFilter.Max exists check if the flavor CPU is less or equal to it
+			if cpuFilter.Max != nil {
+				if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Max) > 0 {
+					klog.Infof("CPU Filter: %d-%d - Flavor CPU: %d", cpuFilter.Min, cpuFilter.Max, flavorTypeK8SliceCR.Characteristics.Cpu)
+					return false
+				}
 			}
 		}
 	}
@@ -135,9 +153,21 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 				klog.Errorf("Error unmarshalling Memory filter: %v", err)
 				return false
 			}
-			if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Max) > 0 {
-				klog.Infof("Memory Filter: %d-%d - Flavor Memory: %d", memoryFilter.Min, memoryFilter.Max, flavorTypeK8SliceCR.Characteristics.Memory)
-				return false
+
+			// Check if the flavor Memory is within the range
+			// If the memoryFilter.Min exists check if the flavor Memory is greater or equal to it
+			if memoryFilter.Min != nil {
+				if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Min) < 0 {
+					klog.Infof("Memory Filter: %d-%d - Flavor Memory: %d", memoryFilter.Min, memoryFilter.Max, flavorTypeK8SliceCR.Characteristics.Memory)
+					return false
+				}
+			}
+			// If the memoryFilter.Max exists check if the flavor Memory is less or equal to it
+			if memoryFilter.Max != nil {
+				if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Max) > 0 {
+					klog.Infof("Memory Filter: %d-%d - Flavor Memory: %d", memoryFilter.Min, memoryFilter.Max, flavorTypeK8SliceCR.Characteristics.Memory)
+					return false
+				}
 			}
 		}
 	}
@@ -167,9 +197,21 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 				klog.Errorf("Error unmarshalling Pods filter: %v", err)
 				return false
 			}
-			if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Max) > 0 {
-				klog.Infof("Pods Filter: %d-%d - Flavor Pods: %d", podsFilter.Min, podsFilter.Max, flavorTypeK8SliceCR.Characteristics.Pods)
-				return false
+
+			// Check if the flavor Pods is within the range
+			// If the podsFilter.Min exists check if the flavor Pods is greater or equal to it
+			if podsFilter.Min != nil {
+				if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Min) < 0 {
+					klog.Infof("Pods Filter: %d-%d - Flavor Pods: %d", podsFilter.Min, podsFilter.Max, flavorTypeK8SliceCR.Characteristics.Pods)
+					return false
+				}
+			}
+			// If the podsFilter.Max exists check if the flavor Pods is less or equal to it
+			if podsFilter.Max != nil {
+				if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Max) > 0 {
+					klog.Infof("Pods Filter: %d-%d - Flavor Pods: %d", podsFilter.Min, podsFilter.Max, flavorTypeK8SliceCR.Characteristics.Pods)
+					return false
+				}
 			}
 		}
 	}
@@ -199,9 +241,21 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 				klog.Errorf("Error unmarshalling Storage filter: %v", err)
 				return false
 			}
-			if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Max) > 0 {
-				klog.Infof("Storage Filter: %d-%d - Flavor Storage: %d", storageFilter.Min, storageFilter.Max, flavorTypeK8SliceCR.Characteristics.Storage)
-				return false
+
+			// Check if the flavor Storage is within the range
+			// If the storageFilter.Min exists check if the flavor Storage is greater or equal to it
+			if storageFilter.Min != nil {
+				if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Min) < 0 {
+					klog.Infof("Storage Filter: %d-%d - Flavor Storage: %d", storageFilter.Min, storageFilter.Max, flavorTypeK8SliceCR.Characteristics.Storage)
+					return false
+				}
+			}
+			// If the storageFilter.Max exists check if the flavor Storage is less or equal to it
+			if storageFilter.Max != nil {
+				if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Max) > 0 {
+					klog.Infof("Storage Filter: %d-%d - Flavor Storage: %d", storageFilter.Min, storageFilter.Max, flavorTypeK8SliceCR.Characteristics.Storage)
+					return false
+				}
 			}
 		}
 	}
@@ -228,7 +282,7 @@ func CheckSelector(selector models.Selector) error {
 	// Parse the selector to check the syntax
 	switch selector.GetSelectorType() {
 	case models.K8SliceNameDefault:
-		k8sliceSelector := selector.(*models.K8SliceSelector)
+		k8sliceSelector := selector.(models.K8SliceSelector)
 		klog.Infof("Checking K8Slice selector: %v", k8sliceSelector)
 		// Nothing is compulsory in the K8Slice selector
 		return nil

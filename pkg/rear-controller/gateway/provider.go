@@ -20,7 +20,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	"k8s.io/apimachinery/pkg/api/resource"
 	"k8s.io/klog/v2"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -69,7 +68,7 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 		encodeResponseStatusCode(w, emptyList, http.StatusNoContent)
 		return
 	}
-
+/*
 	// Select the flavor with the max CPU
 	max := resource.MustParse("0")
 	index := 0
@@ -101,7 +100,20 @@ func (g *Gateway) getFlavors(w http.ResponseWriter, _ *http.Request) {
 	klog.Infof("Flavor parsed: %v", parsed)
 
 	// Encode the Flavor as JSON and write it to the response writer
-	encodeResponse(w, parsed)
+	encodeResponse(w, parsed)*/
+	// Parse the flavors CR to the models.Flavor struct
+	flavorsParsed := make([]models.Flavor, 0)
+	for i := range availableFlavors {
+		parsedFlavor := parseutil.ParseFlavor(&availableFlavors[i])
+		if parsedFlavor == nil {
+			klog.Errorf("Error parsing the Flavor: %s", err)
+			continue
+		}
+		flavorsParsed = append(flavorsParsed, *parsedFlavor)
+	}
+
+	// Encode the Flavor as JSON and write it to the response writer
+	encodeResponse(w, flavorsParsed)
 }
 
 // getFlavorBySelectorHandler gets the flavor CRs from the cluster that match the selector.
@@ -113,12 +125,15 @@ func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Req
 	klog.Infof("URL: %s", r.URL.String())
 
 	// build the selector from the url query parameters
-	selector, err := queryParamToSelector(r.URL.Query(), models.SensorNameDefault)
+	selector, err := queryParamToSelector(r.URL.Query(), models.K8SliceNameDefault)
 	if err != nil {
 		klog.Errorf("Error building the selector from the URL query parameters: %s", err)
 		http.Error(w, "Error building the selector from the URL query parameters", http.StatusBadRequest)
 		return
 	}
+
+	// Print the selector information parsing it:
+	klog.Infof("Selector type: %s", selector.GetSelectorType())
 
 	flavors, err := services.GetAllFlavors(g.client)
 	if err != nil {
@@ -142,7 +157,7 @@ func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Req
 	if len(availableFlavors) == 0 {
 		klog.Infof("No available Flavors found")
 		// Return content for empty list
-		emptyList := make([]*nodecorev1alpha1.Flavor, 0)
+		emptyList := make([]models.Flavor, 0)
 		encodeResponseStatusCode(w, emptyList, http.StatusNoContent)
 		return
 	}
@@ -166,13 +181,13 @@ func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Req
 	if len(flavorsSelected) == 0 {
 		klog.Infof("No matching Flavors found")
 		// Return content for empty list
-		emptyList := make([]*nodecorev1alpha1.Flavor, 0)
+		emptyList := make([]models.Flavor, 0)
 		encodeResponse(w, emptyList)
 		return
 	}
 
 	// Select the flavor with the max CPU
-	max := resource.MustParse("0")
+	/*max := resource.MustParse("0")
 	index := 0
 
 	for i := range availableFlavors {
@@ -203,7 +218,22 @@ func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Req
 	klog.Infof("Flavor parsed: %v", parsed)
 
 	// Encode the Flavor as JSON and write it to the response writer
-	encodeResponse(w, parsed)
+	encodeResponse(w, parsed)*/
+
+	// Parse the flavors CR to the models.Flavor struct
+	flavorsParsed := make([]models.Flavor, 0)
+	for i := range flavorsSelected {
+		parsedFlavor := parseutil.ParseFlavor(&availableFlavors[i])
+		if parsedFlavor == nil {
+			klog.Errorf("Error parsing the Flavor: %s", err)
+			continue
+		}
+		flavorsParsed = append(flavorsParsed, *parsedFlavor)
+	}
+
+	// Encode the Flavor as JSON and write it to the response writer
+	encodeResponse(w, flavorsParsed)
+
 }
 
 // reserveFlavor reserves a Flavor by its flavorID.

@@ -457,19 +457,29 @@ func ForgeFlavorFromObj(flavor *models.Flavor) (*nodecorev1alpha1.Flavor, error)
 				Memory:  flavorTypeDataModel.Characteristics.Memory,
 				Pods:    flavorTypeDataModel.Characteristics.Pods,
 				Storage: flavorTypeDataModel.Characteristics.Storage,
-				Gpu: &nodecorev1alpha1.GPU{
-					Model:  flavorTypeDataModel.Characteristics.Gpu.Model,
-					Cores:  flavorTypeDataModel.Characteristics.Gpu.Cores,
-					Memory: flavorTypeDataModel.Characteristics.Gpu.Memory,
-				},
+				Gpu: func () *nodecorev1alpha1.GPU {
+					if flavorTypeDataModel.Characteristics.Gpu != nil {
+						return &nodecorev1alpha1.GPU{
+							Model:  flavorTypeDataModel.Characteristics.Gpu.Model,
+							Cores:  flavorTypeDataModel.Characteristics.Gpu.Cores,
+							Memory: flavorTypeDataModel.Characteristics.Gpu.Memory,
+						}
+					}
+					return nil
+				}(),
 			},
 			Properties: nodecorev1alpha1.Properties{
 				Latency:           flavorTypeDataModel.Properties.Latency,
 				SecurityStandards: flavorTypeDataModel.Properties.SecurityStandards,
-				CarbonFootprint: &nodecorev1alpha1.CarbonFootprint{
-					Embodied:    flavorTypeDataModel.Properties.CarbonFootprint.Embodied,
-					Operational: flavorTypeDataModel.Properties.CarbonFootprint.Operational,
-				},
+				CarbonFootprint: func () *nodecorev1alpha1.CarbonFootprint {
+					if flavorTypeDataModel.Properties.CarbonFootprint != nil {
+						return &nodecorev1alpha1.CarbonFootprint{
+							Embodied: flavorTypeDataModel.Properties.CarbonFootprint.Embodied,
+							Operational: flavorTypeDataModel.Properties.CarbonFootprint.Operational,
+						}
+					}
+					return nil
+				}(),
 			},
 			Policies: nodecorev1alpha1.Policies{
 				Partitionability: nodecorev1alpha1.Partitionability{
@@ -516,13 +526,18 @@ func ForgeFlavorFromObj(flavor *models.Flavor) (*nodecorev1alpha1.Flavor, error)
 			},
 			Availability:        flavor.Availability,
 			NetworkPropertyType: flavor.NetworkPropertyType,
-			Location: &nodecorev1alpha1.Location{
-				Latitude:        flavor.Location.Latitude,
-				Longitude:       flavor.Location.Longitude,
-				Country:         flavor.Location.Country,
-				City:            flavor.Location.City,
-				AdditionalNotes: flavor.Location.AdditionalNotes,
-			},
+			Location: func () *nodecorev1alpha1.Location {
+				if flavor.Location != nil {
+					return &nodecorev1alpha1.Location{
+						Latitude:        flavor.Location.Latitude,
+						Longitude:       flavor.Location.Longitude,
+						Country:         flavor.Location.Country,
+						City:            flavor.Location.City,
+						AdditionalNotes: flavor.Location.AdditionalNotes,
+					}
+				}
+				return nil
+			}(),
 		},
 	}
 	return f, nil

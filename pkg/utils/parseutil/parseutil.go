@@ -111,23 +111,9 @@ func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 				return nil, err
 			}
 
-			var cpuFilterMinCopy *resource.Quantity
-			if cpuFilter.Min != nil {
-				cpuFilterMinCopyData := cpuFilter.Min.DeepCopy()
-				cpuFilterMinCopy = &cpuFilterMinCopyData
-			}
-			cpuFilterMinCopy = nil
-
-			var cpuFilterMaxCopy *resource.Quantity
-			if cpuFilter.Max != nil {
-				cpuFilterMaxCopyData := cpuFilter.Max.DeepCopy()
-				cpuFilterMaxCopy = &cpuFilterMaxCopyData
-			}
-			cpuFilterMaxCopy = nil
-
 			cpuFilterData := models.ResourceQuantityRangeFilter{
-				Min: cpuFilterMinCopy,
-				Max: cpuFilterMaxCopy,
+				Min: cpuFilter.Min,
+				Max: cpuFilter.Max,
 			}
 			// Marshal the CPU filter data into JSON
 			cpuFilterDataJSON, err := json.Marshal(cpuFilterData)
@@ -183,23 +169,9 @@ func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 				return nil, err
 			}
 
-			var memoryFilterMinCopy *resource.Quantity
-			if memoryFilter.Min != nil {
-				memoryFilterMinCopyData := memoryFilter.Min.DeepCopy()
-				memoryFilterMinCopy = &memoryFilterMinCopyData
-			}
-			memoryFilterMinCopy = nil
-
-			var memoryFilterMaxCopy *resource.Quantity
-			if memoryFilter.Max != nil {
-				memoryFilterMaxCopyData := memoryFilter.Max.DeepCopy()
-				memoryFilterMaxCopy = &memoryFilterMaxCopyData
-			}
-			memoryFilterMaxCopy = nil
-
 			memoryFilterData := models.ResourceQuantityRangeFilter{
-				Min: memoryFilterMinCopy,
-				Max: memoryFilterMaxCopy,
+				Min: memoryFilter.Min,
+				Max: memoryFilter.Max,
 			}
 			// Marshal the Memory filter data into JSON
 			memoryFilterDataJSON, err := json.Marshal(memoryFilterData)
@@ -255,23 +227,9 @@ func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 				return nil, err
 			}
 
-			var podsFilterMinCopy *resource.Quantity
-			if podsFilter.Min != nil {
-				podsFilterMinCopyData := podsFilter.Min.DeepCopy()
-				podsFilterMinCopy = &podsFilterMinCopyData
-			}
-			podsFilterMinCopy = nil
-
-			var podsFilterMaxCopy *resource.Quantity
-			if podsFilter.Max != nil {
-				podsFilterMaxCopyData := podsFilter.Max.DeepCopy()
-				podsFilterMaxCopy = &podsFilterMaxCopyData
-			}
-			podsFilterMaxCopy = nil
-
 			podsFilterData := models.ResourceQuantityRangeFilter{
-				Min: podsFilterMinCopy,
-				Max: podsFilterMaxCopy,
+				Min: podsFilter.Min,
+				Max: podsFilter.Max,
 			}
 			// Marshal the Pods filter data into JSON
 			podsFilterDataJSON, err := json.Marshal(podsFilterData)
@@ -327,23 +285,9 @@ func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 				return nil, err
 			}
 
-			var storageFilterMinCopy *resource.Quantity
-			if storageFilter.Min != nil {
-				storageFilterMinCopyData := storageFilter.Min.DeepCopy()
-				storageFilterMinCopy = &storageFilterMinCopyData
-			}
-			storageFilterMinCopy = nil
-
-			var storageFilterMaxCopy *resource.Quantity
-			if storageFilter.Max != nil {
-				storageFilterMaxCopyData := storageFilter.Max.DeepCopy()
-				storageFilterMaxCopy = &storageFilterMaxCopyData
-			}
-			storageFilterMaxCopy = nil
-
 			storageFilterData := models.ResourceQuantityRangeFilter{
-				Min: storageFilterMinCopy,
-				Max: storageFilterMaxCopy,
+				Min: storageFilter.Min,
+				Max: storageFilter.Max,
 			}
 			// Marshal the Storage filter data into JSON
 			storageFilterDataJSON, err := json.Marshal(storageFilterData)
@@ -486,10 +430,15 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 			Properties: models.K8SliceProperties{
 				Latency:           flavorTypeStruct.Properties.Latency,
 				SecurityStandards: flavorTypeStruct.Properties.SecurityStandards,
-				CarbonFootprint: models.CarbonFootprint{
-					Embodied:    flavorTypeStruct.Properties.CarbonFootprint.Embodied,
-					Operational: flavorTypeStruct.Properties.CarbonFootprint.Operational,
-				},
+				CarbonFootprint: func () *models.CarbonFootprint {
+					if flavorTypeStruct.Properties.CarbonFootprint != nil {
+						return &models.CarbonFootprint{
+							Embodied:    flavorTypeStruct.Properties.CarbonFootprint.Embodied,
+							Operational: flavorTypeStruct.Properties.CarbonFootprint.Operational,
+						}
+					}
+					return nil
+				}(),
 			},
 			Policies: models.K8SlicePolicies{
 				Partitionability: models.K8SlicePartitionability{
@@ -522,13 +471,19 @@ func ParseFlavor(flavor *nodecorev1alpha1.Flavor) *models.Flavor {
 		ProviderID:          flavor.Spec.ProviderID,
 		NetworkPropertyType: flavor.Spec.NetworkPropertyType,
 		Timestamp:           flavor.CreationTimestamp.Time,
-		Location: models.Location{
-			Latitude:        flavor.Spec.Location.Latitude,
-			Longitude:       flavor.Spec.Location.Longitude,
-			Country:         flavor.Spec.Location.Country,
-			City:            flavor.Spec.Location.City,
-			AdditionalNotes: flavor.Spec.Location.AdditionalNotes,
-		},
+		Location: func () *models.Location {
+			if flavor.Spec.Location != nil {
+				location := models.Location{
+					Latitude:        flavor.Spec.Location.Latitude,
+					Longitude:       flavor.Spec.Location.Longitude,
+					Country:         flavor.Spec.Location.Country,
+					City:            flavor.Spec.Location.City,
+					AdditionalNotes: flavor.Spec.Location.AdditionalNotes,
+				}
+				return &location
+			}
+			return nil
+		}(),
 		Price: models.Price{
 			Amount:   flavor.Spec.Price.Amount,
 			Currency: flavor.Spec.Price.Currency,
