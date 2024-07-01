@@ -86,6 +86,7 @@ func (r *DiscoveryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	//nolint:exhaustive // We don't need to handle all the cases
 	switch discovery.Status.Phase.Phase {
 	case nodecorev1alpha1.PhaseRunning:
+		klog.Infof("Discovery %s running", discovery.Name)
 		flavors, err := r.Gateway.DiscoverFlavors(ctx, discovery.Spec.Selector)
 		if err != nil {
 			klog.Errorf("Error when getting Flavor: %s", err)

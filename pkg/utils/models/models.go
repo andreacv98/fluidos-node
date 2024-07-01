@@ -92,17 +92,22 @@ type Selector interface {
 }
 
 type K8SliceSelector struct {
-	Cpu     ResourceQuantityFilter `schema:"cpu"`
-	Memory  ResourceQuantityFilter `schema:"memory"`
-	Pods    ResourceQuantityFilter `schema:"pods"`
-	Storage ResourceQuantityFilter `schema:"storage"`
+	Cpu     *ResourceQuantityFilter	`scheme:"cpu,omitempty"`
+	Memory  *ResourceQuantityFilter	`scheme:"memory,omitempty"`
+	Pods    *ResourceQuantityFilter	`scheme:"pods,omitempty"`
+	Storage *ResourceQuantityFilter	`scheme:"storage,omitempty"`
 }
 
 func (ks K8SliceSelector) GetSelectorType() FlavorTypeName {
 	return K8SliceNameDefault
 }
 
-type ResourceQuantityFilter interface {
+type ResourceQuantityFilter struct {
+	Name FilterType			`scheme:"name"`
+	Data json.RawMessage	`scheme:"data"`
+}
+
+type ResourceQuantityFilterData interface {
 	GetFilterType() FilterType
 }
 
@@ -114,7 +119,7 @@ const (
 )
 
 type ResourceQuantityMatchFilter struct {
-	Value resource.Quantity `schema:"value"`
+	Value resource.Quantity `scheme:"value,omitempty"`
 }
 
 func (fq ResourceQuantityMatchFilter) GetFilterType() FilterType {
@@ -122,8 +127,8 @@ func (fq ResourceQuantityMatchFilter) GetFilterType() FilterType {
 }
 
 type ResourceQuantityRangeFilter struct {
-	Min resource.Quantity `schema:"min"`
-	Max resource.Quantity `schema:"max"`
+	Min *resource.Quantity	`scheme:"min,omitempty"`
+	Max *resource.Quantity	`scheme:"max,omitempty"`
 }
 
 func (fq ResourceQuantityRangeFilter) GetFilterType() FilterType {

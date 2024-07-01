@@ -9,11 +9,11 @@ spec:
     selectorTypeIdentifier: K8Slice
     selectorTypeData:
       cpuFilter:
-        filterType: Match
+        name: Match
         data:
           value: "1000m"
       memoryFilter:
-        filterType: Range
+        name: Range
         data:
           min: "1Gi"
           max: "10Gi"

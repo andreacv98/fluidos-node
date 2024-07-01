@@ -15,6 +15,7 @@
 package common
 
 import (
+	"encoding/json"
 	"fmt"
 
 	"k8s.io/klog/v2"
@@ -78,20 +79,31 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 	// CPU Filter
 	if k8SliceSelector.Cpu != nil {
 		// Check if the flavor matches the CPU filter
-		switch k8SliceSelector.Cpu.GetFilterType() {
+		cpuFilterModel := *k8SliceSelector.Cpu
+		switch cpuFilterModel.Name {
 		case models.MatchFilter:
-			// Cast the CPU filter to a match filter
-			cpuFilter := k8SliceSelector.Cpu.(*models.ResourceQuantityMatchFilter)
+			// Parse the CPU filter to a match filter
+			var cpuFilter models.ResourceQuantityMatchFilter
+			err := json.Unmarshal(cpuFilterModel.Data, &cpuFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling CPU filter: %v", err)
+				return false
+			}
 			// Check if the flavor CPU matches the filter
 			if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(cpuFilter.Value) != 0 {
 				klog.Infof("CPU Filter: %d - Flavor CPU: %d", cpuFilter.Value, flavorTypeK8SliceCR.Characteristics.Cpu)
 				return false
 			}
 		case models.RangeFilter:
-			// Cast the CPU filter to a range filter
-			cpuFilter := k8SliceSelector.Cpu.(*models.ResourceQuantityRangeFilter)
+			// Parse the CPU filter to a range filter
+			var cpuFilter models.ResourceQuantityRangeFilter
+			err := json.Unmarshal(cpuFilterModel.Data, &cpuFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling CPU filter: %v", err)
+				return false
+			}
 			// Check if the flavor CPU is within the range
-			if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(cpuFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(cpuFilter.Max) > 0 {
+			if flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Cpu.Cmp(*cpuFilter.Max) > 0 {
 				klog.Infof("CPU Filter: %d-%d - Flavor CPU: %d", cpuFilter.Min, cpuFilter.Max, flavorTypeK8SliceCR.Characteristics.Cpu)
 				return false
 			}
@@ -101,16 +113,29 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 	// Memory Filter
 	if k8SliceSelector.Memory != nil {
 		// Check if the flavor matches the Memory filter
-		switch k8SliceSelector.Memory.GetFilterType() {
+		memoryFilterModel := *k8SliceSelector.Memory
+		switch memoryFilterModel.Name {
 		case models.MatchFilter:
-			memoryFilter := k8SliceSelector.Memory.(*models.ResourceQuantityMatchFilter)
+			// Parse the Memory filter to a match filter
+			var memoryFilter models.ResourceQuantityMatchFilter
+			err := json.Unmarshal(memoryFilterModel.Data, &memoryFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Memory filter: %v", err)
+				return false
+			}
 			if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(memoryFilter.Value) != 0 {
 				klog.Infof("Memory Filter: %d - Flavor Memory: %d", memoryFilter.Value, flavorTypeK8SliceCR.Characteristics.Memory)
 				return false
 			}
 		case models.RangeFilter:
-			memoryFilter := k8SliceSelector.Memory.(*models.ResourceQuantityRangeFilter)
-			if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(memoryFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Memory.Cmp(memoryFilter.Max) > 0 {
+			// Parse the Memory filter to a range filter
+			var memoryFilter models.ResourceQuantityRangeFilter
+			err := json.Unmarshal(memoryFilterModel.Data, &memoryFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Memory filter: %v", err)
+				return false
+			}
+			if flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Memory.Cmp(*memoryFilter.Max) > 0 {
 				klog.Infof("Memory Filter: %d-%d - Flavor Memory: %d", memoryFilter.Min, memoryFilter.Max, flavorTypeK8SliceCR.Characteristics.Memory)
 				return false
 			}
@@ -120,16 +145,29 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 	// Pods Filter
 	if k8SliceSelector.Pods != nil {
 		// Check if the flavor matches the Pods filter
-		switch k8SliceSelector.Pods.GetFilterType() {
+		podsFilterModel := *k8SliceSelector.Pods
+		switch podsFilterModel.Name {
 		case models.MatchFilter:
-			podsFilter := k8SliceSelector.Pods.(*models.ResourceQuantityMatchFilter)
+			// Parse the Pods filter to a match filter
+			var podsFilter models.ResourceQuantityMatchFilter
+			err := json.Unmarshal(podsFilterModel.Data, &podsFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Pods filter: %v", err)
+				return false
+			}
 			if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(podsFilter.Value) != 0 {
 				klog.Infof("Pods Filter: %d - Flavor Pods: %d", podsFilter.Value, flavorTypeK8SliceCR.Characteristics.Pods)
 				return false
 			}
 		case models.RangeFilter:
-			podsFilter := k8SliceSelector.Pods.(*models.ResourceQuantityRangeFilter)
-			if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(podsFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Pods.Cmp(podsFilter.Max) > 0 {
+			// Parse the Pods filter to a range filter
+			var podsFilter models.ResourceQuantityRangeFilter
+			err := json.Unmarshal(podsFilterModel.Data, &podsFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Pods filter: %v", err)
+				return false
+			}
+			if flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Pods.Cmp(*podsFilter.Max) > 0 {
 				klog.Infof("Pods Filter: %d-%d - Flavor Pods: %d", podsFilter.Min, podsFilter.Max, flavorTypeK8SliceCR.Characteristics.Pods)
 				return false
 			}
@@ -139,16 +177,29 @@ func filterFlavorK8Slice(k8SliceSelector *models.K8SliceSelector, flavorTypeK8Sl
 	// Storage Filter
 	if k8SliceSelector.Storage != nil {
 		// Check if the flavor matches the Storage filter
-		switch k8SliceSelector.Storage.GetFilterType() {
+		storageFilterModel := *k8SliceSelector.Storage
+		switch storageFilterModel.Name {
 		case models.MatchFilter:
-			storageFilter := k8SliceSelector.Storage.(*models.ResourceQuantityMatchFilter)
+			// Parse the Storage filter to a match filter
+			var storageFilter models.ResourceQuantityMatchFilter
+			err := json.Unmarshal(storageFilterModel.Data, &storageFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Storage filter: %v", err)
+				return false
+			}
 			if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(storageFilter.Value) != 0 {
 				klog.Infof("Storage Filter: %d - Flavor Storage: %d", storageFilter.Value, flavorTypeK8SliceCR.Characteristics.Storage)
 				return false
 			}
 		case models.RangeFilter:
-			storageFilter := k8SliceSelector.Storage.(*models.ResourceQuantityRangeFilter)
-			if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(storageFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Storage.Cmp(storageFilter.Max) > 0 {
+			// Parse the Storage filter to a range filter
+			var storageFilter models.ResourceQuantityRangeFilter
+			err := json.Unmarshal(storageFilterModel.Data, &storageFilter)
+			if err != nil {
+				klog.Errorf("Error unmarshalling Storage filter: %v", err)
+				return false
+			}
+			if flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Min) < 0 || flavorTypeK8SliceCR.Characteristics.Storage.Cmp(*storageFilter.Max) > 0 {
 				klog.Infof("Storage Filter: %d-%d - Flavor Storage: %d", storageFilter.Min, storageFilter.Max, flavorTypeK8SliceCR.Characteristics.Storage)
 				return false
 			}

@@ -38,8 +38,8 @@ const (
 type ValueType string
 
 type ResourceQuantityFilter struct {
-	// FilterType indicates the type of the filter
-	FilterType FilterType `json:"filterType"`
+	// Name indicates the type of the filter
+	Name FilterType `json:"name"`
 	// Filter data
 	Data runtime.RawExtension `json:"data"`
 }
@@ -57,7 +57,7 @@ type ResourceRangeSelector struct {
 func ParseResourceQuantityFilter(rqf *ResourceQuantityFilter) (FilterType, interface{}, error) {
 	var validationErr error
 
-	switch rqf.FilterType {
+	switch rqf.Name {
 	case TypeMatchFilter:
 		// Unmarshal the data into a ResourceMatchSelector
 		var rms ResourceMatchSelector
@@ -80,6 +80,6 @@ func ParseResourceQuantityFilter(rqf *ResourceQuantityFilter) (FilterType, inter
 		}
 		return TypeRangeFilter, rrs, validationErr
 	default:
-		return "", nil, fmt.Errorf("unknown filter type %s", rqf.FilterType)
+		return "", nil, fmt.Errorf("unknown filter type %s", rqf.Name)
 	}
 }

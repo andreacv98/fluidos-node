@@ -162,6 +162,9 @@ func (g *Gateway) PurchaseFlavor(ctx context.Context, transactionID string, sell
 
 // DiscoverFlavors is a function that returns an array of Flavor that fit the Selector by performing a get request to an http server.
 func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha1.Selector) ([]*nodecorev1alpha1.Flavor, error) {
+	klog.Info("Discovering flavors")
+
+	// Check if Liqo is ready
 	err := checkLiqoReadiness(g.LiqoReady)
 	if err != nil {
 		return nil, err
@@ -170,6 +173,7 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 	var s models.Selector
 	var flavorsCR []*nodecorev1alpha1.Flavor
 
+	klog.Info("Checking selector")
 	if selector != nil {
 		s, err = parseutil.ParseFlavorSelector(selector)
 		klog.Infof("Selector parsed: %v", s)
@@ -178,10 +182,12 @@ func (g *Gateway) DiscoverFlavors(ctx context.Context, selector *nodecorev1alpha
 		}
 	}
 
+	klog.Info("Getting local providers")
 	providers := getters.GetLocalProviders(context.Background(), g.client)
 
 	// Send the GET request to all the servers in the list
 	for _, provider := range providers {
+		klog.Infof("Provider: %s", provider)
 		flavors, err := discover(ctx, s, provider)
 		if err != nil {
 			klog.Errorf("Error when searching Flavor: %s", err)

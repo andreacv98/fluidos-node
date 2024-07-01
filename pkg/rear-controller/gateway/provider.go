@@ -110,6 +110,8 @@ func (g *Gateway) getK8SliceFlavorsBySelector(w http.ResponseWriter, r *http.Req
 
 	klog.Infof("Processing request for getting K8Slice Flavors by selector...")
 
+	klog.Infof("URL: %s", r.URL.String())
+
 	// build the selector from the url query parameters
 	selector, err := queryParamToSelector(r.URL.Query(), models.SensorNameDefault)
 	if err != nil {

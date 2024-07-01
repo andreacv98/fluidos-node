@@ -29,21 +29,28 @@ import (
 // ParseFlavorSelector parses FlavorSelector into a Selector.
 func ParseFlavorSelector(selector *nodecorev1alpha1.Selector) (models.Selector, error) {
 	// Parse the Selector
+	klog.Infof("Parsing the selector %s", selector.SelectorTypeIdentifier)
 	selectorIdentifier, selectorStruct, err := nodecorev1alpha1.ParseSolverSelector(selector)
 	if err != nil {
 		return nil, err
 	}
 
+	klog.Infof("Selector type: %s", selectorIdentifier)
+
 	switch selectorIdentifier {
 	case nodecorev1alpha1.Type_K8Slice:
 		// Force casting of selectorStruct to K8Slice
 		selectorStruct := selectorStruct.(nodecorev1alpha1.K8SliceSelector)
-
+		klog.Info("Forced casting of selectorStruct to K8Slice")
+		// Print the selectorStruct
+		klog.Infof("SelectorStruct: %v", selectorStruct)
 		// Generate the model for the K8Slice selector
 		k8SliceSelector, err := parseK8SliceFilters(&selectorStruct)
 		if err != nil {
 			return nil, err
 		}
+
+		klog.Infof("K8SliceSelector: %v", k8SliceSelector)
 
 		return *k8SliceSelector, nil
 
@@ -68,135 +75,323 @@ func parseK8SliceFilters(k8sSelector *nodecorev1alpha1.K8SliceSelector) (*models
 	var cpuFilterModel, memoryFilterModel, podsFilterModel, storageFilterModel models.ResourceQuantityFilter
 
 	// Parse the CPU filter
-	switch k8sSelector.CpuFilter.FilterType {
-	case nodecorev1alpha1.TypeMatchFilter:
-		// Unmarshal the data into a ResourceMatchSelector
-		var cpuFilter nodecorev1alpha1.ResourceMatchSelector
-		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
-		if err != nil {
-			return nil, err
-		}
+	if k8sSelector.CpuFilter != nil {
+		klog.Info("Parsing the CPU filter")
+		switch k8sSelector.CpuFilter.Name {
+		case nodecorev1alpha1.TypeMatchFilter:
+			klog.Info("Parsing the CPU filter as a MatchFilter")
+			// Unmarshal the data into a ResourceMatchSelector
+			var cpuFilter nodecorev1alpha1.ResourceMatchSelector
+			err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the CPU filter
-		cpuFilterModel = models.ResourceQuantityMatchFilter{
-			Value: cpuFilter.Value.DeepCopy(),
-		}
-	case nodecorev1alpha1.TypeRangeFilter:
-		// Unmarshal the data into a ResourceRangeSelector
-		var cpuFilter nodecorev1alpha1.ResourceRangeSelector
-		err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
-		if err != nil {
-			return nil, err
-		}
+			cpuFilterData := models.ResourceQuantityMatchFilter{
+				Value: cpuFilter.Value.DeepCopy(),
+			}
+			// Marshal the CPU filter data into JSON
+			cpuFilterDataJSON, err := json.Marshal(cpuFilterData)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the CPU filter
-		cpuFilterModel = models.ResourceQuantityRangeFilter{
-			Min: cpuFilter.Min.DeepCopy(),
-			Max: cpuFilter.Max.DeepCopy(),
+			// Generate the model for the CPU filter
+			cpuFilterModel = models.ResourceQuantityFilter{
+				Name:	models.MatchFilter,
+				Data:	cpuFilterDataJSON,
+			}
+			klog.Infof("CPU filter model: %v", cpuFilterModel)
+		case nodecorev1alpha1.TypeRangeFilter:
+			klog.Info("Parsing the CPU filter as a RangeFilter")
+			// Unmarshal the data into a ResourceRangeSelector
+			var cpuFilter nodecorev1alpha1.ResourceRangeSelector
+			err := json.Unmarshal(k8sSelector.CpuFilter.Data.Raw, &cpuFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			var cpuFilterMinCopy *resource.Quantity
+			if cpuFilter.Min != nil {
+				cpuFilterMinCopyData := cpuFilter.Min.DeepCopy()
+				cpuFilterMinCopy = &cpuFilterMinCopyData
+			}
+			cpuFilterMinCopy = nil
+
+			var cpuFilterMaxCopy *resource.Quantity
+			if cpuFilter.Max != nil {
+				cpuFilterMaxCopyData := cpuFilter.Max.DeepCopy()
+				cpuFilterMaxCopy = &cpuFilterMaxCopyData
+			}
+			cpuFilterMaxCopy = nil
+
+			cpuFilterData := models.ResourceQuantityRangeFilter{
+				Min: cpuFilterMinCopy,
+				Max: cpuFilterMaxCopy,
+			}
+			// Marshal the CPU filter data into JSON
+			cpuFilterDataJSON, err := json.Marshal(cpuFilterData)
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate the model for the CPU filter
+			cpuFilterModel = models.ResourceQuantityFilter{
+				Name:	models.RangeFilter,
+				Data:	cpuFilterDataJSON,
+			}
+			klog.Infof("CPU filter model: %v", cpuFilterModel)
+		default:
+			return nil, fmt.Errorf("unknown filter type")
 		}
-	default:
-		return nil, fmt.Errorf("unknown filter type")
 	}
 
-	// Parse the Memory filter
-	switch k8sSelector.MemoryFilter.FilterType {
-	case nodecorev1alpha1.TypeMatchFilter:
-		// Unmarshal the data into a ResourceMatchSelector
-		var memoryFilter nodecorev1alpha1.ResourceMatchSelector
-		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
-		if err != nil {
-			return nil, err
-		}
+	if k8sSelector.MemoryFilter != nil {
+		klog.Info("Parsing the Memory filter")
+		// Parse the Memory filter
+		switch k8sSelector.MemoryFilter.Name {
+		case nodecorev1alpha1.TypeMatchFilter:
+			klog.Info("Parsing the Memory filter as a MatchFilter")
+			// Unmarshal the data into a ResourceMatchSelector
+			var memoryFilter nodecorev1alpha1.ResourceMatchSelector
+			err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Memory filter
-		memoryFilterModel = models.ResourceQuantityMatchFilter{
-			Value: memoryFilter.Value.DeepCopy(),
-		}
-	case nodecorev1alpha1.TypeRangeFilter:
-		// Unmarshal the data into a ResourceRangeSelector
-		var memoryFilter nodecorev1alpha1.ResourceRangeSelector
-		err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
-		if err != nil {
-			return nil, err
-		}
+			memoryFilterData := models.ResourceQuantityMatchFilter{
+				Value: memoryFilter.Value.DeepCopy(),
+			}
+			// Marshal the Memory filter data into JSON
+			memoryFilterDataJSON, err := json.Marshal(memoryFilterData)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Memory filter
-		memoryFilterModel = models.ResourceQuantityRangeFilter{
-			Min: memoryFilter.Min.DeepCopy(),
-			Max: memoryFilter.Max.DeepCopy(),
+			// Generate the model for the Memory filter
+			memoryFilterModel = models.ResourceQuantityFilter{
+				Name:	models.MatchFilter,
+				Data:	memoryFilterDataJSON,
+			}
+			klog.Infof("Memory filter model: %v", memoryFilterModel)
+		case nodecorev1alpha1.TypeRangeFilter:
+			klog.Info("Parsing the Memory filter as a RangeFilter")
+			// Unmarshal the data into a ResourceRangeSelector
+			var memoryFilter nodecorev1alpha1.ResourceRangeSelector
+			err := json.Unmarshal(k8sSelector.MemoryFilter.Data.Raw, &memoryFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			var memoryFilterMinCopy *resource.Quantity
+			if memoryFilter.Min != nil {
+				memoryFilterMinCopyData := memoryFilter.Min.DeepCopy()
+				memoryFilterMinCopy = &memoryFilterMinCopyData
+			}
+			memoryFilterMinCopy = nil
+
+			var memoryFilterMaxCopy *resource.Quantity
+			if memoryFilter.Max != nil {
+				memoryFilterMaxCopyData := memoryFilter.Max.DeepCopy()
+				memoryFilterMaxCopy = &memoryFilterMaxCopyData
+			}
+			memoryFilterMaxCopy = nil
+
+			memoryFilterData := models.ResourceQuantityRangeFilter{
+				Min: memoryFilterMinCopy,
+				Max: memoryFilterMaxCopy,
+			}
+			// Marshal the Memory filter data into JSON
+			memoryFilterDataJSON, err := json.Marshal(memoryFilterData)
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate the model for the Memory filter
+			memoryFilterModel = models.ResourceQuantityFilter{
+				Name:	models.RangeFilter,
+				Data:	memoryFilterDataJSON,
+			}
+			klog.Infof("Memory filter model: %v", memoryFilterModel)
+		default:
+			return nil, fmt.Errorf("unknown filter type")
 		}
-	default:
-		return nil, fmt.Errorf("unknown filter type")
 	}
 
-	// Parse the Pods filter
-	switch k8sSelector.PodsFilter.FilterType {
-	case nodecorev1alpha1.TypeMatchFilter:
-		// Unmarshal the data into a ResourceMatchSelector
-		var podsFilter nodecorev1alpha1.ResourceMatchSelector
-		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
-		if err != nil {
-			return nil, err
-		}
+	if k8sSelector.PodsFilter != nil {
+		klog.Info("Parsing the Pods filter")
+		// Parse the Pods filter
+		switch k8sSelector.PodsFilter.Name {
+		case nodecorev1alpha1.TypeMatchFilter:
+			klog.Info("Parsing the Pods filter as a MatchFilter")
+			// Unmarshal the data into a ResourceMatchSelector
+			var podsFilter nodecorev1alpha1.ResourceMatchSelector
+			err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Pods filter
-		podsFilterModel = models.ResourceQuantityMatchFilter{
-			Value: podsFilter.Value.DeepCopy(),
-		}
-	case nodecorev1alpha1.TypeRangeFilter:
-		// Unmarshal the data into a ResourceRangeSelector
-		var podsFilter nodecorev1alpha1.ResourceRangeSelector
-		err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
-		if err != nil {
-			return nil, err
-		}
+			podsFilterData := models.ResourceQuantityMatchFilter{
+				Value: podsFilter.Value.DeepCopy(),
+			}
+			// Marshal the Pods filter data into JSON
+			podsFilterDataJSON, err := json.Marshal(podsFilterData)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Pods filter
-		podsFilterModel = models.ResourceQuantityRangeFilter{
-			Min: podsFilter.Min.DeepCopy(),
-			Max: podsFilter.Max.DeepCopy(),
+			// Generate the model for the Pods filter
+			podsFilterModel = models.ResourceQuantityFilter{
+				Name:	models.MatchFilter,
+				Data:	podsFilterDataJSON,
+			}
+			klog.Infof("Pods filter model: %v", podsFilterModel)
+		case nodecorev1alpha1.TypeRangeFilter:
+			klog.Info("Parsing the Pods filter as a RangeFilter")
+			// Unmarshal the data into a ResourceRangeSelector
+			var podsFilter nodecorev1alpha1.ResourceRangeSelector
+			err := json.Unmarshal(k8sSelector.PodsFilter.Data.Raw, &podsFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			var podsFilterMinCopy *resource.Quantity
+			if podsFilter.Min != nil {
+				podsFilterMinCopyData := podsFilter.Min.DeepCopy()
+				podsFilterMinCopy = &podsFilterMinCopyData
+			}
+			podsFilterMinCopy = nil
+
+			var podsFilterMaxCopy *resource.Quantity
+			if podsFilter.Max != nil {
+				podsFilterMaxCopyData := podsFilter.Max.DeepCopy()
+				podsFilterMaxCopy = &podsFilterMaxCopyData
+			}
+			podsFilterMaxCopy = nil
+
+			podsFilterData := models.ResourceQuantityRangeFilter{
+				Min: podsFilterMinCopy,
+				Max: podsFilterMaxCopy,
+			}
+			// Marshal the Pods filter data into JSON
+			podsFilterDataJSON, err := json.Marshal(podsFilterData)
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate the model for the Pods filter
+			podsFilterModel = models.ResourceQuantityFilter{
+				Name:	models.RangeFilter,
+				Data:	podsFilterDataJSON,
+			}
+			klog.Infof("Pods filter model: %v", podsFilterModel)
+		default:
+			return nil, fmt.Errorf("unknown filter type")
 		}
-	default:
-		return nil, fmt.Errorf("unknown filter type")
 	}
 
-	// Parse the Storage filter
-	switch k8sSelector.StorageFilter.FilterType {
-	case nodecorev1alpha1.TypeMatchFilter:
-		// Unmarshal the data into a ResourceMatchSelector
-		var storageFilter nodecorev1alpha1.ResourceMatchSelector
-		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
-		if err != nil {
-			return nil, err
-		}
+	if k8sSelector.StorageFilter != nil {
+		klog.Info("Parsing the Storage filter")
+		// Parse the Storage filter
+		switch k8sSelector.StorageFilter.Name {
+		case nodecorev1alpha1.TypeMatchFilter:
+			klog.Info("Parsing the Storage filter as a MatchFilter")
+			// Unmarshal the data into a ResourceMatchSelector
+			var storageFilter nodecorev1alpha1.ResourceMatchSelector
+			err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Storage filter
-		storageFilterModel = models.ResourceQuantityMatchFilter{
-			Value: storageFilter.Value.DeepCopy(),
-		}
-	case nodecorev1alpha1.TypeRangeFilter:
-		// Unmarshal the data into a ResourceRangeSelector
-		var storageFilter nodecorev1alpha1.ResourceRangeSelector
-		err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
-		if err != nil {
-			return nil, err
-		}
+			storageFilterData := models.ResourceQuantityMatchFilter{
+				Value: storageFilter.Value.DeepCopy(),
+			}
+			// Marshal the Storage filter data into JSON
+			storageFilterDataJSON, err := json.Marshal(storageFilterData)
+			if err != nil {
+				return nil, err
+			}
 
-		// Generate the model for the Storage filter
-		storageFilterModel = models.ResourceQuantityRangeFilter{
-			Min: storageFilter.Min.DeepCopy(),
-			Max: storageFilter.Max.DeepCopy(),
+			// Generate the model for the Storage filter
+			storageFilterModel = models.ResourceQuantityFilter{
+				Name:	models.MatchFilter,
+				Data:	storageFilterDataJSON,
+			}
+			klog.Infof("Storage filter model: %v", storageFilterModel)
+		case nodecorev1alpha1.TypeRangeFilter:
+			klog.Info("Parsing the Storage filter as a RangeFilter")
+			// Unmarshal the data into a ResourceRangeSelector
+			var storageFilter nodecorev1alpha1.ResourceRangeSelector
+			err := json.Unmarshal(k8sSelector.StorageFilter.Data.Raw, &storageFilter)
+			if err != nil {
+				return nil, err
+			}
+
+			var storageFilterMinCopy *resource.Quantity
+			if storageFilter.Min != nil {
+				storageFilterMinCopyData := storageFilter.Min.DeepCopy()
+				storageFilterMinCopy = &storageFilterMinCopyData
+			}
+			storageFilterMinCopy = nil
+
+			var storageFilterMaxCopy *resource.Quantity
+			if storageFilter.Max != nil {
+				storageFilterMaxCopyData := storageFilter.Max.DeepCopy()
+				storageFilterMaxCopy = &storageFilterMaxCopyData
+			}
+			storageFilterMaxCopy = nil
+
+			storageFilterData := models.ResourceQuantityRangeFilter{
+				Min: storageFilterMinCopy,
+				Max: storageFilterMaxCopy,
+			}
+			// Marshal the Storage filter data into JSON
+			storageFilterDataJSON, err := json.Marshal(storageFilterData)
+			if err != nil {
+				return nil, err
+			}
+
+			// Generate the model for the Storage filter
+			storageFilterModel = models.ResourceQuantityFilter{
+				Name:	models.RangeFilter,
+				Data:	storageFilterDataJSON,
+			}
+			klog.Infof("Storage filter model: %v", storageFilterModel)
+		default:
+			return nil, fmt.Errorf("unknown filter type")
 		}
-	default:
-		return nil, fmt.Errorf("unknown filter type")
 	}
 
 	// Generate the model for the K8Slice selector
 	k8SliceSelector := models.K8SliceSelector{
-		Cpu:     cpuFilterModel,
-		Memory:  memoryFilterModel,
-		Pods:    podsFilterModel,
-		Storage: storageFilterModel,
+		Cpu: func() *models.ResourceQuantityFilter {
+			if k8sSelector.CpuFilter != nil {
+				return &cpuFilterModel
+			} else {
+				return nil
+			}
+		}(),
+		Memory: func() *models.ResourceQuantityFilter {
+			if k8sSelector.MemoryFilter != nil {
+				return &memoryFilterModel
+			} else {
+				return nil
+			}
+		}(),
+		Pods: func() *models.ResourceQuantityFilter {
+			if k8sSelector.PodsFilter != nil {
+				return &podsFilterModel
+			} else {
+				return nil
+			}
+		}(),
+		Storage: func() *models.ResourceQuantityFilter {
+			if k8sSelector.StorageFilter != nil {
+				return &storageFilterModel
+			} else {
+				return nil
+			}
+		}(),
 	}
 
 	return &k8SliceSelector, nil

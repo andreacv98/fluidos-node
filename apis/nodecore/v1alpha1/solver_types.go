@@ -20,6 +20,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog/v2"
 )
 
 type Phase string
@@ -145,6 +146,7 @@ func ParseSolverSelector(s *Selector) (FlavorTypeIdentifier, interface{}, error)
 
 	case Type_K8Slice:
 		var k8sliceFilter K8SliceSelector
+		klog.Info("Parsing K8Slice selector")
 		validationErr = json.Unmarshal(s.SelectorTypeData.Raw, &k8sliceFilter)
 		return Type_K8Slice, k8sliceFilter, validationErr
 	case Type_VM:
