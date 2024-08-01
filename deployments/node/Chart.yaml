@@ -1,6 +1,6 @@
 apiVersion: v2
-name: node
-description: A Helm chart for Fluidos Node
+name: FLUIDOS Node
+description: Helm chart for the FLUIDOS Node component. For more information, please refer to the FLUIDOS documentation.
 
 # A chart can be either an 'application' or a 'library' chart.
 #

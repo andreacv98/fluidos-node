@@ -144,7 +144,7 @@ networkManager:
       # -- The name of the ConfigMap containing the FLUIDOS Node identity info.
       name: "fluidos-network-manager-identity"
       # -- The domain name of the FLUIDOS closed domani: It represents for instance the Enterprise and it is used to generate the FQDN of the owned FLUIDOS Nodes
-      domain: ""
+      domain: "fluidos"
       # -- The IP address of the FLUIDOS Node. It can be public or private, depending on the network configuration and it corresponds to the IP address to reach the Network Manager from the outside of the cluster.
       ip: 
       # -- The NodeID is a UUID that identifies the FLUIDOS Node. It is used to generate the FQDN of the owned FLUIDOS Nodes and it is unique in the FLUIDOS closed domain
