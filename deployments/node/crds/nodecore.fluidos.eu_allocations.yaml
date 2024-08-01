@@ -65,8 +65,27 @@ spec:
                   This is the ID of the intent for which the allocation was created.
                   It is used by the Node Orchestrator to identify the correct allocation for a given intent
                 type: string
+              resourceReference:
+                description: ResourceReference is the reference to the resource that
+                  is being allocated
+                properties:
+                  data:
+                    description: Data is the data of the resource that is being allocated
+                    type: object
+                    x-kubernetes-preserve-unknown-fields: true
+                  type:
+                    description: Type is the type of the resource that is being allocated
+                      and is the same as the Flavor type identifier specified in the
+                      contract
+                    type: string
+                required:
+                - data
+                - type
+                type: object
             required:
+            - contract
             - intentID
+            - resourceReference
             type: object
           status:
             description: AllocationStatus defines the observed state of Allocation.

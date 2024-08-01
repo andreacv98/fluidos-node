@@ -841,3 +841,50 @@ func ForgeAllocation(contract *reservationv1alpha1.Contract, intentID string) *n
 		},
 	}
 }
+
+// ForgeResourceReference creates a ResourceReference from a Contract.
+func ForgeResourceReference(contract *reservationv1alpha1.Contract) *nodecorev1alpha1.ResourceReference {
+	switch contract.Spec.Flavor.Spec.FlavorType.TypeIdentifier {
+	case nodecorev1alpha1.TypeK8Slice:		
+		// Forge the Virtual Node Name
+		vnName := namings.ForgeVirtualNodeName(contract.Spec.PeeringTargetCredentials.ClusterName)
+		klog.Infof("Virtual Node Name: %s", vnName)
+		// Forge a K8SliceResourceReference
+		k8SliceRr := &nodecorev1alpha1.K8SliceResourceReference{
+			VirtualNodeName: vnName,
+		}
+		// Marshal the K8SliceResourceReference to JSON
+		k8SliceRrJSON, err := json.Marshal(k8SliceRr)
+		if err != nil {
+			klog.Errorf("Error when marshaling K8SliceResourceReference: %s", err)
+			return nil
+		}
+		return &nodecorev1alpha1.ResourceReference{
+			Type: nodecorev1alpha1.TypeK8Slice,
+			Data:      runtime.RawExtension{Raw: k8SliceRrJSON},
+		}
+	// TODO: Implement the other resource reference types, if any
+	default:
+		klog.Errorf("Flavor type not recognized")
+		return nil
+	}
+}
+
+// ForgeAllocationResourceReference creates an Allocation from a Contract and a ResourceReference.
+func ForgeAllocationResourceReference(contract *reservationv1alpha1.Contract, intentID string, rr *nodecorev1alpha1.ResourceReference) *nodecorev1alpha1.Allocation {
+	return &nodecorev1alpha1.Allocation{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      namings.ForgeAllocationName(contract.Spec.Flavor.Name),
+			Namespace: flags.FluidosNamespace,
+		},
+		Spec: nodecorev1alpha1.AllocationSpec{
+			IntentID:   intentID,
+			Forwarding: false,
+			Contract: nodecorev1alpha1.GenericRef{
+				Name:      contract.Name,
+				Namespace: contract.Namespace,
+			},
+			ResourceReference: *rr,
+		},
+	}
+}

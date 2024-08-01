@@ -127,6 +127,11 @@ func main() {
 			setupLog.Error(err, "unable to create webhook", "webhook", "Flavor")
 			os.Exit(1)
 		}
+		// Register Allocation webhook
+		if err = (&nodecorev1alpha1.Allocation{}).SetupWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "Allocation")
+			os.Exit(1)
+		}
 	} else {
 		setupLog.Info("Webhooks are disabled")
 	}

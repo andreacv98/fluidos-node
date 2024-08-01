@@ -15,7 +15,11 @@
 package v1alpha1
 
 import (
+	"encoding/json"
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 )
 
 //nolint:revive // Do not need to repeat the same comment
@@ -30,6 +34,14 @@ const (
 	Error    Status = "Error"
 )
 
+// ResourceReference is the reference to the resource that is being allocated
+type ResourceReference struct {
+	// Type is the type of the resource that is being allocated and is the same as the Flavor type identifier specified in the contract
+	Type FlavorTypeIdentifier `json:"type"`
+	// Data is the data of the resource that is being allocated
+	Data runtime.RawExtension `json:"data"`
+}
+
 // AllocationSpec defines the desired state of Allocation.
 type AllocationSpec struct {
 	// This is the ID of the intent for which the allocation was created.
@@ -41,7 +53,10 @@ type AllocationSpec struct {
 	Forwarding bool `json:"forwarding,omitempty"`
 
 	// This is the reference to the contract related to the allocation
-	Contract GenericRef `json:"contract,omitempty"`
+	Contract GenericRef `json:"contract"`
+
+	// ResourceReference is the reference to the resource that is being allocated
+	ResourceReference ResourceReference `json:"resourceReference"`
 }
 
 // AllocationStatus defines the observed state of Allocation.
@@ -81,4 +96,26 @@ type AllocationList struct {
 
 func init() {
 	SchemeBuilder.Register(&Allocation{}, &AllocationList{})
+}
+
+// ParseResourceReference parses the resource reference into the given object
+func ParseResourceReference(rr *ResourceReference) (FlavorTypeIdentifier, interface{}, error) {
+
+	if rr == nil {
+		return "", nil, fmt.Errorf("resource reference is nil")
+	}
+
+	switch rr.Type {
+	case TypeK8Slice:
+		// Parse the data into a K8SliceResourceReference
+		var k8Slice K8SliceResourceReference
+		err := json.Unmarshal(rr.Data.Raw, &k8Slice)
+		if err != nil {
+			return rr.Type, nil, err
+		}
+		return rr.Type, k8Slice, nil
+	// TODO: Add ResourceReferences for other Flavor Types
+	default:
+		return rr.Type, nil, fmt.Errorf("unknown resource reference type %s", rr.Type)
+	}
 }

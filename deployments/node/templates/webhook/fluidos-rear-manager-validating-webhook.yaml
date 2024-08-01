@@ -27,6 +27,25 @@ webhooks:
     resources:
     - solvers
   sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: {{ include "fluidos.prefixedName" $rearManagerConfig }}
+      namespace: {{ .Release.Namespace }}
+      path: /validate-nodecore-fluidos-eu-v1alpha1-allocation
+  failurePolicy: Fail
+  name: validate.allocation.nodecore.fluidos.eu
+  rules:
+  - apiGroups:
+    - nodecore.fluidos.eu
+    apiVersions:
+    - v1alpha1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - allocations
 # - admissionReviewVersions:
 #   - v1
 #   - v1beta1

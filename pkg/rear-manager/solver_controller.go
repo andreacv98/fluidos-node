@@ -434,11 +434,11 @@ func (r *SolverReconciler) handlePeering(ctx context.Context, req ctrl.Request, 
 			klog.Errorf("Error when getting Contract for Solver %s: %s", solver.Name, err)
 			return ctrl.Result{}, err
 		}
-		// VirtualNode Name is not used in the current implementation
-		vnName := namings.ForgeVirtualNodeName(contract.Spec.PeeringTargetCredentials.ClusterName)
-		klog.Infof("Virtual Node Name: %s", vnName)
 
-		allocation := resourceforge.ForgeAllocation(&contract, solver.Name)
+		// Forge the ResourceReference
+		rr := resourceforge.ForgeResourceReference(&contract)
+
+		allocation := resourceforge.ForgeAllocationResourceReference(&contract, solver.Name, rr)
 		if err := r.Client.Create(ctx, allocation); err != nil {
 			klog.Errorf("Error when creating Allocation for Solver %s: %s", solver.Name, err)
 			return ctrl.Result{}, err
