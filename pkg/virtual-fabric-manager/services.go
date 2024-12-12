@@ -18,11 +18,6 @@ import (
 	"context"
 	"fmt"
 
-	discoveryv1alpha1 "github.com/liqotech/liqo/apis/discovery/v1alpha1"
-	offloadingv1alpha1 "github.com/liqotech/liqo/apis/offloading/v1alpha1"
-	"github.com/liqotech/liqo/pkg/discovery"
-	"github.com/liqotech/liqo/pkg/utils"
-	foreigncluster "github.com/liqotech/liqo/pkg/utils/foreignCluster"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	types "k8s.io/apimachinery/pkg/types"
@@ -32,11 +27,18 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 
 	"github.com/fluidos-project/node/pkg/utils/consts"
+
+	"github.com/liqotech/liqo/apis/offloading/v1beta1"
 )
 
 // clusterRole
 //+kubebuilder:rbac:groups=discovery.liqo.io,resources=foreignclusters,verbs=get;list;watch;create;update;patch;delete
 //+kubebuilder:rbac:groups=core,resources=*,verbs=get;list;watch
+
+func EstablishNetwork(ctx context.Context, cl client.Client) {
+	// Establish the network with the remote cluster.
+	
+}
 
 // PeerWithCluster creates a ForeignCluster resource to peer with a remote cluster.
 func PeerWithCluster(ctx context.Context, cl client.Client, clusterID,
@@ -164,18 +166,18 @@ func createAuthTokenSecret(ctx context.Context, cl client.Client,
 
 // OffloadNamespace creates a NamespaceOffloading inside the specified namespace with given pod offloading strategy and cluster selector.
 func OffloadNamespace(ctx context.Context, cl client.Client, namespaceName string, strategy offloadingv1alpha1.PodOffloadingStrategyType,
-	clusterTargetID string) (*offloadingv1alpha1.NamespaceOffloading, error) {
+	clusterTargetID string) (*v1beta1.NamespaceOffloading, error) {
 	nodeValues := make([]string, 0)
 	nodeValues = append(nodeValues, clusterTargetID)
 
 	// Create a NamespaceOffloading
-	namespaceOffloading := &offloadingv1alpha1.NamespaceOffloading{
+	namespaceOffloading := &v1beta1.NamespaceOffloading{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "offloading",
 			Namespace: namespaceName,
 		},
-		Spec: offloadingv1alpha1.NamespaceOffloadingSpec{
-			NamespaceMappingStrategy: offloadingv1alpha1.EnforceSameNameMappingStrategyType,
+		Spec: v1beta1.NamespaceOffloadingSpec{
+			NamespaceMappingStrategy: v1beta1.EnforceSameNameMappingStrategyType,
 			PodOffloadingStrategy:    strategy,
 			ClusterSelector: corev1.NodeSelector{
 				NodeSelectorTerms: []corev1.NodeSelectorTerm{

@@ -12,5 +12,16 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package grpc provides the gRPC server for Liqo Controller Manager.
-package grpc
+package liqoresourceslicemanager
+
+import (
+	"k8s.io/apimachinery/pkg/runtime"
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+// ResourceSliceManagerReconciler reconciles a ResourceSlice object.
+type ResourceSliceManagerReconciler struct {
+	client.Client
+	Scheme *runtime.Scheme
+}
+
